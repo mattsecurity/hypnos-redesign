@@ -1,0 +1,8 @@
+{
+  "mode": "built-in image_gen",
+  "generation_requests": 1,
+  "retries": 0,
+  "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-ea490945-6ab0-428f-8f91-92d1c49b9b54.png",
+  "prompt": "Use case: product-mockup\nAsset type: transparent photorealistic car cutout for an interactive road-safety detection diagram\nPrimary request: one neutral silver compact European sedan in front three-quarter view, facing toward viewer at a slight angle. The front nose points toward the lower left of the image and the rear toward the upper right.\nComposition: landscape approximately 1536x1024, entire vehicle within frame with generous margin, all four body corners and visible wheels uncropped. Camera slightly elevated, front license plate clearly visible and large enough to read.\nScene: true transparent alpha background, isolated vehicle cutout. No floor or studio backdrop.\nLighting: premium soft studio lighting suitable for overlay on a light grey road diagram; physically realistic metallic silver paint, black tires and dark glass.\nText (verbatim): front Italian-style fictional license plate 'AA 000 AA', exact letters and numbers, clean legible dark characters on white with simple blue side bands.\nConstraints: generic sedan, no manufacturer logos, no car brand, no badges or other lettering, no additional vehicles, no watermark. Genuine alpha transparency, crisp clean edges, natural photographic proportions.",
+  "inspection": "Photorealistic silver sedan, entire car visible, front nose lower-left, rear upper-right; front fictional plate AA 000 AA clearly legible. PNG alpha channel present. Natural metallic reflections and realistic rims/tires."
+}

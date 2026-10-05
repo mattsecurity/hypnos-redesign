@@ -1,0 +1,38 @@
+{
+  "mode": "built-in image_gen",
+  "generation_requests": 6,
+  "retries": 0,
+  "inspection": "All six visually inspected: clean photorealistic compositions, no unwanted branding or text; all products fully visible on consistent near-white light-grey backgrounds. Hero contains Milan-inspired skyline and quiet roads at blue hour. Illustrative generic products, not verified real models.",
+  "assets": [
+    {
+      "name": "hero",
+      "prompt": "Use case: ads-marketing\nAsset type: premium Italian road-safety website hero background\nPrimary request: cinematic wide aerial photograph of a modern Milan-like European city junction at blue hour, with trees, quiet clearly marked road lanes and crisp cool blue and teal streetlights.\nStyle: highly photorealistic architectural drone photography, realistic city scale and road geometry, sophisticated premium corporate atmosphere.\nComposition: landscape 16:9, wide overview across the intersection, crisp details, subtle depth, usable darker areas for website copy.\nConstraints: no text, no logos, no watermark. Generic city, no recognizable brand.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-fa906954-b690-4eff-88b8-05548ddff775.png"
+    },
+    {
+      "name": "parcometri",
+      "prompt": "Use case: product-mockup\nAsset type: premium road-safety website product image\nPrimary request: one isolated premium dark graphite tall municipal parking payment station with slim solar top, small dark screen, and silver side detail.\nScene: near-white light grey seamless studio background with soft natural contact shadow.\nStyle: highly photorealistic premium industrial product photography.\nComposition: entire product visible, three-quarter view, centered with generous margin, portrait product in landscape image.\nMaterials: finely textured graphite powder-coated metal, brushed silver aluminum accents and black glass.\nConstraints: generic illustrative equipment, no actual supplied brand or model, no lettering, no logo, no readable screen text, no watermark.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-885f93e7-c657-45ca-8693-1662a6de3362.png"
+    },
+    {
+      "name": "autovelox",
+      "prompt": "Use case: product-mockup\nAsset type: premium road-safety website product image\nPrimary request: one isolated compact dark graphite road speed camera mounted on a slim pole, with a subtle amber optical lens.\nScene: near-white light grey seamless studio background and soft contact shadow.\nStyle: highly photorealistic premium industrial product photography, elegant three-quarter view.\nComposition: full pole and camera visible, centered with generous margins, landscape image.\nMaterials: realistic powder-coated graphite metal, precise weatherproof seams, optical glass.\nConstraints: generic illustrative speed camera, no actual brand or model, no text, no logo, no watermark.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-ef888816-5070-45fb-bfe6-78acc586c4fe.png"
+    },
+    {
+      "name": "tutor",
+      "prompt": "Use case: product-mockup\nAsset type: premium road-safety website product image\nPrimary request: one isolated modern overhead road gantry carrying two small ANPR cameras, silver and graphite industrial finish.\nScene: near-white light grey seamless studio backdrop, realistic soft contact shadows.\nStyle: highly photorealistic premium industrial equipment photography.\nComposition: wide landscape image showing complete gantry from an elegant slight three-quarter angle, the two slender supports fully visible, generous margins.\nMaterials: brushed galvanized steel structural beams, dark graphite compact cameras, black optical glass.\nConstraints: generic illustrative equipment, no supplied brand or model, no lettering, no logo, no watermark, no additional devices.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-56435fb9-0e31-48e2-b06d-1b26919f4e92.png"
+    },
+    {
+      "name": "ztl",
+      "prompt": "Use case: product-mockup\nAsset type: premium road-safety website product image\nPrimary request: one photorealistic European urban restricted-zone roadside pole with compact surveillance camera and a simple circular restriction road sign, red outer ring and plain white center with no text.\nScene: isolated on near-white light grey seamless studio background with soft natural contact shadow.\nStyle: premium industrial product photograph, realistic manufactured pole and weatherproof camera.\nComposition: whole pole and sign visible, elegant three-quarter view, centered, generous margin, landscape image.\nMaterials: brushed silver metal, graphite camera housing, reflective red sign border.\nConstraints: generic illustrative equipment, no actual brand or model, no text anywhere, no logos, no watermark.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-62d4cf01-49f7-4efa-871b-0e557b6f0c48.png"
+    },
+    {
+      "name": "lettura-targhe",
+      "prompt": "Use case: product-mockup\nAsset type: premium road-safety website product image\nPrimary request: one compact silver and graphite ANPR license-plate recognition camera with black optical glass and subtle infrared emitters.\nScene: isolated near-white light grey seamless studio background with soft natural contact shadow.\nStyle: highly photorealistic premium macro product photography, precision industrial design.\nComposition: elegant three-quarter close view, camera fully visible with generous negative space, landscape image.\nMaterials: brushed aluminum, finely textured graphite metal, dark polished optical glass, realistic fasteners and weatherproof seams.\nConstraints: generic illustrative equipment, no actual brand or model, no text, no logo, no watermark.",
+      "path": "/Users/matteosicurezza/.codex/generated_images/01a10e45-2855-7de2-a470-4692ff0945a4/exec-d704dbd9-ed19-4124-bd5d-1aba7fec6e33.png"
+    }
+  ]
+}
