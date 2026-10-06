@@ -249,7 +249,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   });
 
   const shared = {
-    glass: new THREE.MeshPhysicalMaterial({ color: 0x07090c, metalness: .1, roughness: .04, transparent: true, opacity: .9, envMapIntensity: 1.8 }),
+    glass: new THREE.MeshPhysicalMaterial({ color: 0x07090c, metalness: .1, roughness: .04, transparent: true, opacity: .62, envMapIntensity: 1.6 }),
     chrome: new THREE.MeshStandardMaterial({ color: 0xd6d9dd, metalness: 1, roughness: .16, envMapIntensity: 1.3 }),
     rubber: new THREE.MeshStandardMaterial({ color: 0x0d0e10, roughness: .78 }),
     trim: new THREE.MeshStandardMaterial({ color: 0x121316, metalness: .2, roughness: .45 }),
@@ -258,6 +258,64 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     atlas: new THREE.MeshStandardMaterial({ map: atlas, normalMap: atlasN, roughness: .6, metalness: .1 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: .9 }),
   };
+  // driver in a dark suit, seated behind the steering wheel (left-hand drive)
+  const wheelObj = model.getObjectByName('方向盘');
+  const wheelC = wheelObj ? new THREE.Box3().setFromObject(wheelObj).getCenter(new THREE.Vector3()) : V(-.38, .95, -.55);
+  const dmat = {
+    suit: new THREE.MeshStandardMaterial({ color: 0x161b26, roughness: .78 }),
+    shirt: new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: .6, emissive: 0xffffff, emissiveIntensity: .05 }),
+    tie: new THREE.MeshStandardMaterial({ color: 0x3a0f16, roughness: .45 }),
+    skin: new THREE.MeshStandardMaterial({ color: 0xc69a7e, roughness: .55, emissive: 0x6a4434, emissiveIntensity: .12 }),
+    hair: new THREE.MeshStandardMaterial({ color: 0x241914, roughness: .7 }),
+  };
+  function limb(a, b, r, mat) {
+    const len = a.distanceTo(b);
+    const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(.01, len - r * 2), 6, 14), mat);
+    m.position.copy(a).add(b).multiplyScalar(.5);
+    m.quaternion.setFromUnitVectors(V(0, 1, 0), b.clone().sub(a).normalize());
+    return m;
+  }
+  function makeDriver() {
+    const d = new THREE.Group();
+    const hip = V(wheelC.x, wheelC.y - .5, wheelC.z + .56);
+    const lean = .2; // reclined seat
+    const chest = hip.clone().add(V(0, .36, .36 * Math.tan(lean) * .5));
+    // torso (jacket)
+    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(.165, .3, 8, 20), dmat.suit);
+    torso.scale.set(1.2, 1, .72); torso.position.copy(hip).add(V(0, .3, .05)); torso.rotation.x = lean; d.add(torso);
+    // shirt V, tie
+    const sgeo = new THREE.CircleGeometry(.07, 3); sgeo.rotateZ(-Math.PI / 2); // V pointing down
+    const shirt = new THREE.Mesh(sgeo, dmat.shirt);
+    shirt.rotation.set(lean, Math.PI, 0); shirt.scale.set(1, 1.6, 1);
+    shirt.position.copy(chest).add(V(0, .1, -.125)); d.add(shirt);
+    const tie = new THREE.Mesh(new THREE.BoxGeometry(.035, .2, .01), dmat.tie);
+    tie.rotation.x = -lean * .6; tie.position.copy(chest).add(V(0, .03, -.13)); d.add(tie);
+    // neck & head
+    const neckBase = chest.clone().add(V(0, .2, .05));
+    d.add(limb(neckBase, neckBase.clone().add(V(0, .11, -.01)), .055, dmat.skin));
+    const head = new THREE.Mesh(new THREE.SphereGeometry(.1, 28, 20), dmat.skin);
+    head.scale.set(.88, 1.12, 1.02); head.position.copy(neckBase).add(V(0, .2, -.015)); d.add(head);
+    const hair = new THREE.Mesh(new THREE.SphereGeometry(.104, 28, 16, 0, Math.PI * 2, 0, Math.PI * .55), dmat.hair);
+    hair.scale.set(.9, 1.05, 1.06); hair.rotation.x = .35; hair.position.copy(head.position).add(V(0, .018, .012)); d.add(hair);
+    // shirt collar
+    const collar = new THREE.Mesh(new THREE.TorusGeometry(.062, .014, 8, 20), dmat.shirt);
+    collar.rotation.x = Math.PI / 2; collar.position.copy(neckBase).add(V(0, .02, 0)); d.add(collar);
+    // arms to the wheel (hands at 9 and 3 o'clock)
+    for (const sx of [-1, 1]) {
+      const sh = chest.clone().add(V(sx * .2, .14, .04));
+      const hand = wheelC.clone().add(V(sx * .17, .02, .03));
+      const elbow = sh.clone().lerp(hand, .5).add(V(sx * .07, -.12, .04));
+      d.add(new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 12), dmat.suit).translateX(sh.x).translateY(sh.y).translateZ(sh.z));
+      d.add(limb(sh, elbow, .052, dmat.suit));
+      d.add(limb(elbow, hand.clone().add(V(0, 0, .06)), .045, dmat.suit));
+      const cuff = limb(hand.clone().add(V(0, 0, .07)), hand.clone().add(V(0, 0, .045)), .038, dmat.shirt); d.add(cuff);
+      const h = new THREE.Mesh(new THREE.SphereGeometry(.04, 14, 10), dmat.skin); h.scale.set(.8, 1, 1.3); h.position.copy(hand); d.add(h);
+    }
+    // thighs
+    for (const sx of [-1, 1]) d.add(limb(hip.clone().add(V(sx * .1, 0, 0)), hip.clone().add(V(sx * .11, .05, -.42)), .075, dmat.suit));
+    return d;
+  }
+
   function buildCar(color, withPlates) {
     const car = carSrc.clone(true);
     const paint = new THREE.MeshPhysicalMaterial({ color, metalness: .55, roughness: .3, clearcoat: 1, clearcoatRoughness: .035, envMapIntensity: 1.35 });
@@ -276,6 +334,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       else if (mn === 'Gar_LXe') o.material = shared.dark;           // interior lamps
       else if (mn === 'MBSL_tex') o.material = inWheel ? shared.rim : shared.atlas;
     });
+    car.add(makeDriver());
     const group = new THREE.Group();
     car.rotation.y = -Math.PI / 2; // model front is −Z; world travel along +X
     group.add(car);

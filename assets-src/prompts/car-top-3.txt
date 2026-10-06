@@ -1,0 +1,5 @@
+Formato: portrait 1024x1536, SFONDO TRASPARENTE (canale alfa reale, PNG con trasparenza, nessun pavimento, nessuna ombra sul terreno).
+Soggetto: fotografia reale vista ESATTAMENTE dall'alto (zenitale, 90°, ortografica) di una SUV compatto grigio antracite, generica, senza marchi.
+Orientamento: l'auto è perfettamente verticale e centrata, il MUSO (cofano e parabrezza anteriore) rivolto verso l'ALTO dell'immagine, il posteriore verso il basso. Tutta l'auto visibile con margine uniforme, specchietti inclusi.
+Dettagli: tetto, parabrezza e lunotto con riflessi realistici, cofano, specchietti laterali, luce morbida diffusa da studio, vernice fotorealistica.
+Vincoli: nessun logo, nessun marchio, nessuna scritta, nessuna targa leggibile, nessuna filigrana, nessun'altra auto.

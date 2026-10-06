@@ -373,13 +373,13 @@ function parkingPlan() {
   top.style.strokeDasharray = n * w; top.style.strokeDashoffset = n * w; stalls.appendChild(top);
   const cars = [];
   for (let i = 0; i < n; i++) {
+    // real top-down cars (generated), nose in or out at random
     const r = document.createElementNS(NS, 'g');
-    const cx = x0 + i * w + 11, cw = w - 22, ch = h - 20, cy = y0 + 9;
-    const colors = ['#2a2f37', '#d9dce1', '#6b7380', '#1d3557', '#9aa1ab', '#3a3f47', '#c9ccd2', '#202329', '#7d2a2f'];
-    r.innerHTML = `<rect x="${cx}" y="${cy}" width="${cw}" height="${ch}" rx="9" fill="${colors[i]}"/>`
-      + `<rect x="${cx + 4}" y="${cy + 14}" width="${cw - 8}" height="11" rx="3" fill="#11151b" opacity=".85"/>`
-      + `<rect x="${cx + 5}" y="${cy + 30}" width="${cw - 10}" height="${ch - 50}" rx="4" fill="#000" opacity=".12"/>`
-      + `<rect x="${cx + 4}" y="${cy + ch - 16}" width="${cw - 8}" height="8" rx="3" fill="#11151b" opacity=".8"/>`;
+    const LEN = [4.0, 4.8, 4.5, 4.8, 4.2, 4.6];           // metres, per model
+    const model = i % 6;
+    const ch = (h - 12) * LEN[model] / 4.8, cw = ch * .52, cx = x0 + i * w + (w - cw) / 2, cy = y0 + 6 + (h - 12 - ch) / 2;
+    const flip = (i * 7) % 3 === 0;
+    r.innerHTML = `<image href="assets/img/cars/car-${model + 1}.webp" x="${cx}" y="${cy}" width="${cw}" height="${ch}" preserveAspectRatio="xMidYMid meet"${flip ? ` transform="rotate(180 ${cx + cw / 2} ${cy + ch / 2})"` : ''}/>`;
     r.style.opacity = 0;
     carsG.appendChild(r); cars.push({ el: r, on: false });
   }

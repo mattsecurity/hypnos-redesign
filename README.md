@@ -30,11 +30,11 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 
 ## Immagini generate (Codex image_gen)
 
-Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
+Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Auto viste dall'alto della pianta sosta (`assets/img/cars/`, 6 modelli con sfondo trasparente). Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
 
 ## Asset di terze parti
 
-- Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
+- Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Guidatore in abito scuro costruito proceduralmente in `story.js`. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
 - Poly Haven (CC0): modello `security_camera_01`, HDRI `rooftop_night`, texture `asphalt_04`.
 - Three.js (MIT), GSAP + ScrollTrigger, Lenis.
 - Font: Inter, Inter Tight, JetBrains Mono (Google Fonts).

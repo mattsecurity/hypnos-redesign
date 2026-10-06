@@ -211,6 +211,7 @@ p { margin: 0; }
 .pl-bg { fill: #fff; }
 .pl-curb { stroke: #d6d9de; stroke-width: 2; }
 .pl-stalls line { stroke: #2f6fe0; stroke-width: 3; stroke-linecap: round; }
+.pl-cars image { filter: drop-shadow(0 3px 3px rgba(12,14,18,.35)); }
 .pl-meter rect { fill: var(--ink); }
 .pl-pulse { fill: none; stroke: var(--accent); stroke-width: 2; transform-origin: 0 -26px; animation: plpulse 2s var(--ease) infinite; }
 @keyframes plpulse { from { transform: scale(.4); opacity: 1; } to { transform: scale(1.8); opacity: 0; } }
