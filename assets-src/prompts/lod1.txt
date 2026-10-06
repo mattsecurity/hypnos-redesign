@@ -1,0 +1,6 @@
+L'immagine allegata è un RITAGLIO ingrandito 2x (quindi sfocato) di una foto aerea zenitale da drone di un viale milanese all'ora blu.
+Compito: produci la STESSA identica inquadratura in alta definizione, come se fosse stata scattata da un drone più basso con una fotocamera migliore. Formato landscape 1536x1024.
+Mantieni ESATTAMENTE: posizione e larghezza del viale orizzontale, posizione delle strisce, dello spartitraffico centrale con aiuole, dei marciapiedi, degli alberi, dei lampioni e delle loro pozze di luce calda, dei tetti, delle vie laterali e delle auto parcheggiate. Stessa illuminazione dell'ora blu, stessi colori.
+Aggiungi solo dettaglio fotografico reale e nitido: texture dell'asfalto, foglie degli alberi, tegole, bordi dei marciapiedi, tombini, segnaletica orizzontale consumata.
+Le corsie del viale devono restare VUOTE, senza veicoli. Vista perfettamente zenitale.
+Vincoli: nessun testo, nessun logo, nessuna filigrana.

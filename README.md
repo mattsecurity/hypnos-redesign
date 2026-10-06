@@ -1,35 +1,42 @@
-# HYPNOS — Redesign
+# HYPNOS Srl — Redesign
 
-Sito professionale in italiano con catalogo di sei soluzioni, schede di approfondimento e un’unica sequenza con camera 3D guidata dallo scroll: vista dall’alto, passaggio al retro e avvicinamento alla targa. La sequenza viene mostrata una sola volta, seguita da esempi distinti di impiego del dato (ZTL, transiti e sicurezza stradale).
+Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it).
+
+## Struttura
+
+- **Intro** — il logo originale (marchio "H" ricostruito in SVG dalla favicon ufficiale + wordmark corallo) si disegna, poi vola nella barra di navigazione.
+- **Sequenza 3D guidata dallo scroll** (`js/story.js`, Three.js 0.180):
+  1. città dall'alto all'ora blu, auto che percorre il viale, traffico che si muove;
+  2. zoom zenitale sull'auto (mirino HUD);
+  3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico, passaggio alle spalle della telecamera con profondità di campo;
+  4. "flash" e passaggio nel feed della telecamera: rilevamento veicolo, box targa, ritaglio targa, OCR carattere per carattere;
+  5. verifiche: classe, colore, velocità, RCA, revisione, veicoli rubati, ZTL, transito registrato.
+- **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (pianta animata con stalli e occupazione), servizio integrato verbali (flusso a 5 fasi), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
 
 ## Anteprima locale
-
-Dalla cartella del progetto:
 
 ```sh
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 ```
 
-Aprire http://127.0.0.1:4173.
+Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della sequenza.
 
-## Contenuti e immagini
+## Tecnica della sequenza
 
-Servizi, indirizzo, telefono, e-mail, WhatsApp e dati societari ripresi da https://www.hypnosweb.it. La spiegazione della velocità media è stata verificata sul sito di Autostrade per l’Italia: https://www.autostrade.it/it/tecnologia-sicurezza/sicurezza/il-tutor.
+- Terreno: foto aerea zenitale generata (`assets/img/aerial.webp`) + un secondo livello di dettaglio (`aerial-lod1.webp`) generato a partire dal ritaglio centrale e allineato in colore. Lo shader del terreno fonde i due livelli in base alla quota, aggiunge micro-dettaglio d'asfalto reale (Poly Haven) e calcola in modo analitico i coni dei fari e le luci posteriori.
+- Segnaletica, cordoli, lampioni e palo sono geometria 3D allineata alle misure della foto.
+- Post-produzione: bloom, profondità di campo vicino alla telecamera, grading con grana/vignettatura, modalità "feed" (distorsione, aberrazione, linee).
+- Fallback a immagine statica se WebGL2 non è disponibile; qualità ridotta su mobile.
 
-I dispositivi sono visual illustrativi generati con lo strumento integrato ImageGen. L’auto della nuova sequenza è un modello 3D illustrativo renderizzato in tempo reale; la fotografia dell’auto generata nella prima versione non è più usata nella pagina. Targa, velocità e tempi delle animazioni sono esempi. Non sono fotografie dei modelli effettivamente commercializzati. Le immagini ottimizzate si trovano in `dist/assets/`; i prompt sono in `image-prompts.json` e `car-prompt.json`.
+## Immagini generate (Codex image_gen)
 
-Il pannello software è un flusso illustrativo e non una riproduzione del gestionale reale.
+Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
 
-Il modulo contatti prepara una richiesta nel programma di posta dell’utente, con riepilogo prima dell’apertura. Non invia messaggi dal server. Per invio diretto occorre collegare un servizio e-mail o il backend aziendale.
+## Asset di terze parti
 
-## Implementazione
+- Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
+- Poly Haven (CC0): modello `security_camera_01`, HDRI `rooftop_night`, texture `asphalt_04`.
+- Three.js (MIT), GSAP + ScrollTrigger, Lenis.
+- Font: Inter, Inter Tight, JetBrains Mono (Google Fonts).
 
-HTML, CSS e JavaScript senza build. La sezione narrativa usa posizionamento sticky e Three.js 0.180.0. Lo scroll controlla un percorso continuo della camera, interpolato con Catmull–Rom, dall’alto al retro e fino alla targa. La targa è una texture dimostrativa e il riquadro di acquisizione è proiettato dalla sua posizione 3D. Nessun ciclo automatico e nessuna animazione dell’auto nelle applicazioni successive. Three.js e il decoder Draco sono serviti localmente. Rendering sospeso quando la scheda è nascosta e dopo che la camera ha raggiunto la posizione richiesta; fallback testuale se WebGL non è disponibile. Supporto tastiera per menu, dialoghi e schede; rispetto di `prefers-reduced-motion`. Nessun tracciamento e nessuna persistenza dei dati del modulo.
-
-La pubblicazione Sites è separata dal dominio aziendale hypnosweb.it.
-
-## Asset 3D e attribuzioni
-
-- Modello auto Ferrari 458 Italia: vicent091036, fonte indicata nell’esempio ufficiale Three.js https://threejs.org/examples/webgl_materials_car.html e https://sketchfab.com/models/57bf6cc56931426e87494f554df1dab6. Modello distribuito negli esempi Three.js: https://github.com/mrdoob/three.js/blob/dev/examples/models/gltf/ferrari.glb. Materiali e targa dimostrativa personalizzati.
-- Ambiente HDR Venice sunset: asset degli esempi Three.js, https://github.com/mrdoob/three.js/blob/dev/examples/textures/equirectangular/venice_sunset_1k.hdr.
-- Three.js: licenza MIT conservata in dist/vendor/three/LICENSE.txt.
+Il modulo contatti non invia dati a server: apre il programma di posta con il riepilogo.

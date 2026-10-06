@@ -1,63 +1,418 @@
 <!doctype html>
 <html lang="it">
 <head>
-<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="theme-color" content="#f5f5f7"><meta name="description" content="HYPNOS affianca Comuni e Polizie Locali con parcometri, controllo della velocità, varchi ZTL, lettura targhe e software. Dalla progettazione alla gestione.">
-<title>HYPNOS — La città, in equilibrio.</title>
-<meta property="og:title" content="HYPNOS — La città, in equilibrio."><meta property="og:description" content="Tecnologie e servizi per la sosta, la sicurezza stradale e le pubbliche amministrazioni."><meta property="og:type" content="website">
-<link rel="icon" href="assets/favicon.svg" type="image/svg+xml"><link rel="stylesheet" href="styles.css"><link rel="stylesheet" href="capture.css">
-<script defer src="app.js"></script>
-<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/"}}</script>
-<script type="module" src="capture.js"></script>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HYPNOS Srl — Tecnologie per la sicurezza stradale e la sosta</title>
+<meta name="description" content="HYPNOS Srl affianca Comandi di Polizia Locale e Pubbliche Amministrazioni con noleggio e vendita di telecamere a lettura targhe, autovelox, Tutor, varchi ZTL, parcometri e sviluppo software. Milano.">
+<meta name="theme-color" content="#07090d">
+<meta property="og:title" content="HYPNOS Srl — Tecnologie per la sicurezza stradale">
+<meta property="og:description" content="Lettura targhe, autovelox, Tutor, ZTL, parcometri e software per Polizie Locali e PA.">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/img/anpr.webp">
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/main.css">
+<link rel="preload" href="assets/img/aerial.webp" as="image">
+<script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
+<script src="vendor/gsap/gsap.min.js" defer></script>
+<script src="vendor/gsap/ScrollTrigger.min.js" defer></script>
+<script src="vendor/lenis/lenis.min.js" defer></script>
+<script type="module" src="js/main.js"></script>
 </head>
-<body>
-<a class="skip" href="#main">Vai al contenuto</a>
-<header class="nav-wrap"><nav class="nav container" aria-label="Navigazione principale">
-<a class="brand" href="#" aria-label="HYPNOS, homepage"><span class="brand-mark" aria-hidden="true">H</span>HYPNOS<span class="brand-srl">SRL</span></a>
-<div class="nav-links" id="navigation"><a href="#soluzioni">Soluzioni</a><a href="#metodo">Il nostro metodo</a><a href="#azienda">HYPNOS</a><a class="nav-contact" href="#contatti">Parliamone</a></div>
-<button class="menu-toggle" aria-label="Apri menu" aria-expanded="false" aria-controls="navigation"><span></span><span></span></button>
-</nav></header>
-<main id="main">
-<section class="hero container">
-<div class="hero-top"><p class="eyebrow reveal">TECNOLOGIA. SERVIZIO. TERRITORIO.</p><span class="hero-index reveal">AL FIANCO DEGLI ENTI LOCALI</span></div>
-<div class="hero-copy"><h1 class="reveal">La città,<br>  in <span>equilibrio.</span></h1><div class="hero-intro reveal"><p>Soluzioni che semplificano la sosta,<br class="desktop">  rendono più sicure le strade<br class="desktop">  e aiutano chi le amministra.</p><a class="button dark" href="#soluzioni">Esplora le soluzioni</a><span class="small-copy">Dalla tecnologia alla gestione. Insieme.</span></div></div>
-<div class="hero-media"><img src="assets/city.webp" alt="Vista aerea di un incrocio urbano al crepuscolo" width="1536" height="1024" fetchpriority="high"><div class="hero-image-shade"></div><div class="hero-caption"><span>Uno sguardo d’insieme.<br>  <strong>Un’attenzione a ogni dettaglio.</strong></span><span class="image-label">SOSTA · MOBILITÀ · SICUREZZA</span></div></div>
-<div class="hero-bottom"><span>Soluzioni per Comuni e Polizie Locali</span><span>Noleggio · Vendita · Gestione</span><a class="scroll-cue" href="#soluzioni" aria-label="Scorri alle soluzioni"><span aria-hidden="true">↓</span></a></div>
+<body class="is-loading">
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="hmark" viewBox="1.9 0.7 28.2 23.6"><path d="M10.5 14V22.75H3.5V2.25H10.5V9.5H20.5V22.75H28.5V2.25H22" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linejoin="miter" stroke-linecap="butt"/></symbol>
+</svg>
+
+<!-- ============ LOADER / LOGO INTRO ============ -->
+<div class="loader" id="loader" aria-hidden="true">
+  <div class="loader__inner">
+    <div class="loader__logo" id="loader-logo">
+      <svg class="loader__mark" viewBox="1.9 0.7 28.2 23.6"><path class="draw" d="M10.5 14V22.75H3.5V2.25H10.5V9.5H20.5V22.75H28.5V2.25H22" fill="none" stroke="currentColor" stroke-width="2.7" stroke-linejoin="miter"/></svg>
+      <span class="loader__word"><span>H</span><span>Y</span><span>P</span><span>N</span><span>O</span><span>S</span></span>
+    </div>
+    <div class="loader__meta">
+      <span class="loader__claim">Tecnologia · Servizio · Territorio</span>
+      <span class="loader__bar"><i id="loader-bar"></i></span>
+      <span class="loader__pct" id="loader-pct">0%</span>
+    </div>
+  </div>
+</div>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="HYPNOS Srl — inizio pagina">
+    <svg class="brand__mark" aria-hidden="true"><use href="#hmark"/></svg>
+    <span class="brand__word">HYPNOS</span><span class="brand__srl">Srl</span>
+  </a>
+  <nav class="nav__links" id="nav-links" aria-label="Navigazione principale">
+    <a href="#soluzioni">Soluzioni</a>
+    <a href="#sosta">Sosta</a>
+    <a href="#verbali">Servizi</a>
+    <a href="#software">Software</a>
+    <a href="#azienda">Azienda</a>
+  </nav>
+  <a class="nav__cta" href="#contatti">Contattaci</a>
+  <button class="nav__burger" id="burger" aria-label="Apri il menu" aria-expanded="false" aria-controls="nav-links"><span></span><span></span></button>
+</header>
+
+<main id="top">
+
+<!-- ============ STORY (scroll-driven 3D) ============ -->
+<section class="story" id="story" aria-label="Dalla città alla targa: come funziona la lettura targhe">
+  <div class="story__sticky">
+    <canvas class="story__canvas" id="story-canvas" aria-hidden="true"></canvas>
+    <img class="story__fallback" src="assets/img/aerial.webp" alt="Vista aerea di un viale di Milano all’ora blu" width="1536" height="1024">
+    <div class="story__shade" aria-hidden="true"></div>
+
+    <!-- aerial reticle on the vehicle -->
+    <div class="reticle" id="reticle" aria-hidden="true">
+      <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <div class="reticle__tag"><b>VEICOLO IN TRANSITO</b><span>VIALE · CORSIA 1 · DIR. EST</span></div>
+    </div>
+    <div class="target" id="target" aria-hidden="true"><i></i><span>PUNTO DI CONTROLLO · CAM 04</span></div>
+
+    <!-- camera feed HUD -->
+    <div class="feed" id="feed" aria-hidden="true">
+      <div class="feed__frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>
+      <div class="feed__top">
+        <span class="feed__rec"><i></i>REC</span>
+        <span>CAM 04 · VIALE · DIREZIONE EST</span>
+        <span class="feed__clock" id="feed-clock">--</span>
+      </div>
+      <div class="box box--car" id="box-car"><span>AUTOVETTURA · 98,7%</span></div>
+      <div class="box box--plate" id="box-plate"><i class="scan"></i></div>
+      <div class="read" id="read">
+        <div class="read__crop"><canvas id="plate-crop" width="520" height="110"></canvas></div>
+        <div class="read__ocr" id="ocr">·······</div>
+        <div class="read__meta"><span>ITALIA</span><span>CONFIDENZA 99,4%</span><span>12 ms</span></div>
+      </div>
+      <ul class="checks" id="checks">
+        <li><span>Targa</span><b>GM 471 KX</b><em class="ok"></em></li>
+        <li><span>Classe veicolo</span><b>Autovettura</b><em class="ok"></em></li>
+        <li><span>Colore</span><b>Nero</b><em class="ok"></em></li>
+        <li><span>Velocità rilevata</span><b>47 km/h <small>limite 50</small></b><em class="ok"></em></li>
+        <li><span>Copertura RCA</span><b>Valida</b><em class="ok"></em></li>
+        <li><span>Revisione</span><b>Regolare</b><em class="ok"></em></li>
+        <li><span>Veicoli rubati</span><b>Nessuna segnalazione</b><em class="ok"></em></li>
+        <li><span>Accesso ZTL</span><b>Autorizzato</b><em class="ok"></em></li>
+      </ul>
+      <div class="logged" id="logged"><i></i>Transito registrato <span id="logged-time"></span></div>
+      <div class="feed__bottom"><span>ANPR · IR 850 nm · 50 fps</span><span>Simulazione illustrativa · targa fittizia</span></div>
+    </div>
+
+    <!-- chapters -->
+    <div class="chapters">
+      <article class="chapter chapter--hero" data-in="-1" data-out=".10">
+        <p class="eyebrow">Sicurezza stradale · Sosta · Pubblica Amministrazione</p>
+        <h1>La città<br>ha mille occhi.<br><span>Noi li rendiamo intelligenti.</span></h1>
+        <p class="lead">Telecamere a lettura targhe, autovelox, Tutor, varchi ZTL, parcometri e software. Al fianco di Comuni e Polizie Locali, dal progetto alla gestione.</p>
+      </article>
+      <article class="chapter" data-in=".13" data-out=".27">
+        <p class="eyebrow"><b>01</b> La città</p>
+        <h2>Ogni giorno,<br>migliaia di passaggi.</h2>
+        <p>Flussi, accessi, velocità, soste. Ogni strada racconta qualcosa, a chi sa leggerla.</p>
+      </article>
+      <article class="chapter" data-in=".31" data-out=".45">
+        <p class="eyebrow"><b>02</b> Il veicolo</p>
+        <h2>Un’auto entra<br>nel viale.</h2>
+        <p>Tra cento metri incontrerà un punto di controllo. Il sistema è già pronto a riconoscerla.</p>
+      </article>
+      <article class="chapter" data-in=".5" data-out=".62">
+        <p class="eyebrow"><b>03</b> Il punto di controllo</p>
+        <h2>Un occhio che<br>non si distrae.</h2>
+        <p>Telecamera ANPR con illuminatore a infrarossi. Giorno e notte, con ogni condizione di luce.</p>
+      </article>
+      <article class="chapter chapter--feed" data-in=".67" data-out=".79">
+        <p class="eyebrow"><b>04</b> La lettura</p>
+        <h2>La targa, in una<br>frazione di secondo.</h2>
+        <p>Rilevamento del veicolo, localizzazione della targa, riconoscimento dei caratteri.</p>
+      </article>
+      <article class="chapter chapter--feed" data-in=".81" data-out="1.2">
+        <p class="eyebrow"><b>05</b> Oltre la targa</p>
+        <h2>Un solo passaggio.<br>Tutte le verifiche.</h2>
+        <p>Il dato entra nel gestionale e incrocia le banche dati previste: assicurazione, revisione, liste di controllo, permessi ZTL.</p>
+      </article>
+    </div>
+
+    <div class="rail" id="rail" aria-hidden="true">
+      <span data-at="0">Città</span><span data-at=".31">Veicolo</span><span data-at=".5">Controllo</span><span data-at=".67">Lettura</span><span data-at=".81">Verifiche</span>
+      <i id="rail-fill"></i>
+    </div>
+    <div class="scroll-hint" id="scroll-hint" aria-hidden="true"><span>Scorri per seguire il veicolo</span><i></i></div>
+  </div>
 </section>
-<section class="capture-story" id="esperienza" aria-labelledby="capture-title">
-<div class="capture-scroll"><div class="capture-pin">
-<div class="capture-stage" id="capture-stage" data-phase="0" aria-label="Sequenza: vista dall’alto, vista posteriore, dettaglio della targa">
-<div id="car-canvas" aria-hidden="true"></div>
-<div class="capture-title-wrap"><p class="eyebrow">UN SOLO PASSAGGIO. UN DATO UTILE.</p><h2 id="capture-title">Dal veicolo.<br> Alla targa.</h2></div>
-<div class="capture-view-label"><span id="capture-phase-index">01 / 03</span><span id="capture-phase-label">Vista dall’alto</span></div>
-<div class="capture-target" aria-hidden="true"><i></i></div>
-<div class="capture-result"><span>TARGA ACQUISITA</span><strong>AA 000 AA</strong><p>Il passaggio diventa un’informazione.</p></div>
-<div class="capture-bottom"><div class="capture-caption"><span class="capture-kicker">01 / IL PASSAGGIO</span><p id="capture-caption">Un veicolo entra nel punto di controllo.</p></div><div class="capture-scroll-cue">Scorri per seguire la rilevazione <span aria-hidden="true">↓</span></div></div>
-<div class="capture-track" aria-hidden="true"><i></i></div>
-<div class="capture-fallback"><span>LETTURA TARGHE</span><strong>AA 000 AA</strong><p>Acquisizione dell’immagine, riconoscimento della targa, verifica dell’evento.</p></div>
-<span class="capture-render-note">RICOSTRUZIONE ILLUSTRATIVA · TARGA FITTIZIA</span>
-</div></div></div>
-<div class="use-cases section container" id="applicazioni"><div class="section-heading reveal"><div><p class="eyebrow">CHE COSA PUOI FARCI</p><h2>Una targa rilevata.<br> Più modi di usarla.</h2></div><p>La lettura identifica il passaggio.<br> Il progetto definisce come gestirlo.</p></div>
-<div class="use-grid">
-<article class="use-card reveal" id="uso-ztl"><span class="use-index">01 / GESTIONE DEGLI ACCESSI</span><h3>Verificare un<br> accesso alla ZTL.</h3><p>Collega il passaggio al controllo di autorizzazioni e fasce orarie definite dal Comune.</p><div class="use-visual access-visual" aria-label="Esempio: targa rilevata e accesso da verificare"><span class="use-token">AA 000 AA</span><div class="access-route"><i></i><span>Autorizzazioni e orari</span><i></i></div><div class="access-check"><span>ACCESSO RILEVATO</span><strong>Da verificare</strong></div></div><button class="text-button" data-product="ztl">Scopri i varchi ZTL <span aria-hidden="true">+</span></button></article>
-<article class="use-card reveal" id="uso-anpr"><span class="use-index">02 / MONITORAGGIO DEI TRANSITI</span><h3>Dare un riferimento<br> a ogni passaggio.</h3><p>Trasforma l’immagine della targa in un dato consultabile nel flusso operativo previsto dal progetto.</p><div class="use-visual transit-visual" aria-label="Esempio illustrativo di evento acquisito"><div class="transit-row"><span class="transit-time">10:42</span><div><span>PASSAGGIO ACQUISITO</span><strong>AA 000 AA</strong></div><i>01</i></div><div class="transit-row"><span class="transit-time">10:43</span><div><span>VERIFICA OPERATORE</span><strong>Evento in esame</strong></div><i>02</i></div><div class="transit-row"><span class="transit-time">10:44</span><div><span>GESTIONE OPERATIVA</span><strong>Dato organizzato</strong></div><i>03</i></div></div><button class="text-button" data-product="anpr">Scopri la lettura targhe <span aria-hidden="true">+</span></button></article>
-<article class="use-card reveal" id="uso-velocita"><span class="use-index">03 / SICUREZZA STRADALE</span><h3>Identificare l’evento.<br> Misurare la velocità.</h3><p>La targa identifica il veicolo. La misura della velocità richiede dispositivi dedicati: autovelox o Tutor.</p><div class="use-visual speed-visual"><div><span>AUTOVELOX</span><strong>In un punto.</strong><div class="speed-point"><i></i></div><p>Velocità istantanea</p></div><div><span>TUTOR</span><strong>Su un tratto.</strong><div class="speed-range"><i></i><b></b><i></i></div><p>Velocità media</p></div></div><div class="use-links"><button class="text-button" data-product="autovelox">Autovelox <span aria-hidden="true">+</span></button><button class="text-button" data-product="tutor">Tutor <span aria-hidden="true">+</span></button></div></article>
-</div><div class="use-footnote"><p>Esempi di flusso operativo. La verifica e la gestione degli eventi restano affidate agli operatori.</p><a href="#soluzioni">Esplora tutte le soluzioni</a></div>
-</div></section>
-<section class="solutions section container" id="soluzioni">
-<div class="section-heading reveal"><div><p class="eyebrow">LE NOSTRE SOLUZIONI</p><h2>Una risposta concreta.<br>  A ogni esigenza.</h2></div><p>Dispositivi e servizi pensati per lavorare insieme.<br>  Scopri cosa possono fare per il tuo territorio.</p></div>
-<div class="product-grid" id="products"></div>
-<p class="asset-note">Le immagini dei dispositivi sono illustrative. La configurazione viene definita in base al progetto.</p>
+
+<!-- ============ MANIFESTO ============ -->
+<section class="manifesto" data-nav="light">
+  <div class="wrap">
+    <p class="eyebrow">Chi è HYPNOS</p>
+    <p class="manifesto__text" id="manifesto">HYPNOS affianca Comandi di Polizia Locale e amministrazioni con tecnologie innovative e sviluppo software. Seguiamo ogni progetto dall’analisi delle esigenze all’installazione, dalla manutenzione alla gestione operativa, dal back office al front end.</p>
+    <div class="manifesto__pills">
+      <span>Noleggio</span><span>Vendita</span><span>Gestione integrata</span><span>Supporto tecnico</span><span>Consulenza</span>
+    </div>
+  </div>
 </section>
-<section class="software section container" id="software"><div class="software-copy reveal"><p class="eyebrow">SOFTWARE PER LA PUBBLICA AMMINISTRAZIONE</p><h2>Meno complessità.<br>  Più controllo.</h2><p>La tecnologia sul territorio ha bisogno di strumenti chiari in ufficio. Sviluppiamo software per la sicurezza stradale e supportiamo gli operatori nella gestione dei processi.</p><div class="workflow-options" role="tablist" aria-label="Esplora il flusso software"><button class="workflow-button selected" role="tab" aria-selected="true" aria-controls="workflow-panel" id="workflow-tab-0" data-workflow="0"><span>01</span>Raccogliere</button><button class="workflow-button" role="tab" aria-selected="false" aria-controls="workflow-panel" id="workflow-tab-1" data-workflow="1" tabindex="-1"><span>02</span>Verificare</button><button class="workflow-button" role="tab" aria-selected="false" aria-controls="workflow-panel" id="workflow-tab-2" data-workflow="2" tabindex="-1"><span>03</span>Gestire</button></div><p id="workflow-description" class="workflow-description">Organizza gli eventi provenienti dai dispositivi in un unico flusso di lavoro.</p></div>
-<div class="software-window reveal" id="workflow-panel" role="tabpanel" aria-labelledby="workflow-tab-0"><div class="window-top"><span class="window-dots"><i></i><i></i><i></i></span><span>HYPNOS / FLUSSO OPERATIVO</span><span class="demo-label">DEMO</span></div><div class="dashboard"><div class="dashboard-sidebar"><span class="dashboard-logo">H</span><span class="dash-item active">▤</span><span class="dash-item">◎</span><span class="dash-item">▥</span></div><div class="dashboard-body"><div class="dashboard-title"><div><span class="micro-label">SICUREZZA STRADALE</span><h3 id="dashboard-heading">Eventi raccolti</h3></div><span class="dashboard-date">Flusso illustrativo</span></div><div class="dashboard-summary"><div><span>Origine</span><strong id="dashboard-origin">Dispositivi</strong></div><div><span>Attività</span><strong id="dashboard-task">Raccolta dati</strong></div></div><div class="dashboard-table"><div class="table-head"><span>Evento</span><span>Stato</span></div><div class="table-row"><span><i class="event-icon">P</i>Sosta</span><span class="status-tag">Acquisito</span></div><div class="table-row"><span><i class="event-icon">V</i>Varco ZTL</span><span class="status-tag">Acquisito</span></div><div class="table-row"><span><i class="event-icon">T</i>Lettura targhe</span><span class="status-tag">Acquisito</span></div></div><div class="dashboard-progress"><span id="dashboard-footer">Il dato entra nel sistema.</span><div><i></i></div></div></div></div></div>
+
+<!-- ============ SOLUZIONI ============ -->
+<section class="solutions" id="soluzioni" data-nav="light">
+  <div class="wrap solutions__head">
+    <div>
+      <p class="eyebrow">Le soluzioni</p>
+      <h2 class="split">Sei strumenti.<br>Un unico interlocutore.</h2>
+    </div>
+    <p class="solutions__intro">Apparecchiature in noleggio o in vendita, installate e mantenute dai nostri tecnici, con la gestione del servizio quando serve.</p>
+  </div>
+  <div class="hscroll" id="hscroll">
+    <div class="hscroll__track" id="htrack">
+      <article class="card">
+        <div class="card__media"><img src="assets/img/anpr.webp" alt="Telecamera per lettura targhe su palo, al crepuscolo" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">01</span>
+          <h3>Telecamere a lettura targhe</h3>
+          <p>Riconoscimento automatico delle targhe, giorno e notte. Controllo dei transiti, verifica di assicurazione e revisione, liste di controllo e analisi dei flussi.</p>
+          <ul><li>Illuminazione IR</li><li>Lettura in movimento</li><li>Integrazione con il gestionale</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="assets/img/autovelox.webp" alt="Postazione autovelox fissa a bordo di una strada provinciale" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">02</span>
+          <h3>Autovelox</h3>
+          <p>Apparecchiature per il controllo della velocità istantanea, in postazione fissa, in noleggio o in vendita. Con la gestione integrata dei verbali generati dal servizio.</p>
+          <ul><li>Noleggio o vendita</li><li>Installazione e manutenzione</li><li>Gestione dei verbali</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="assets/img/tutor.webp" alt="Portale Tutor sopra un’autostrada all’ora blu" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">03</span>
+          <h3>Tutor</h3>
+          <p>Controllo della velocità media su tratta, tra due punti di rilevazione. Una prevenzione continua, che non si limita a un singolo punto della strada.</p>
+          <ul><li>Velocità media</li><li>Due varchi di rilevazione</li><li>Servizio integrato</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="assets/img/ztl.webp" alt="Varco ZTL con pannello luminoso in un centro storico" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">04</span>
+          <h3>Varchi ZTL</h3>
+          <p>Controllo degli accessi alle zone a traffico limitato. Il passaggio viene confrontato con permessi e fasce orarie stabilite dal Comune.</p>
+          <ul><li>Liste bianche e permessi</li><li>Fasce orarie</li><li>Pannelli di stato</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="assets/img/parcometro.webp" alt="Parcometro su un marciapiede di Milano accanto a stalli blu" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">05</span>
+          <h3>Parcometri</h3>
+          <p>Gestione integrata della sosta a pagamento: fornitura, installazione e manutenzione dei parcometri, segnaletica e personale qualificato. Chiavi in mano.</p>
+          <ul><li>Fornitura e posa</li><li>Segnaletica</li><li>Gestione del servizio</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="assets/img/control.webp" alt="Sala operativa con monitor di videosorveglianza stradale" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">06</span>
+          <h3>Software per la PA</h3>
+          <p>Sviluppiamo software per la gestione della sicurezza stradale e affianchiamo la pubblica amministrazione con un supporto professionale e continuativo.</p>
+          <ul><li>Sviluppo su misura</li><li>Formazione</li><li>Assistenza continuativa</li></ul>
+        </div>
+      </article>
+      <div class="card card--end">
+        <p>Non sai da dove partire?</p>
+        <a class="btn btn--dark" href="#contatti">Parliamone</a>
+      </div>
+    </div>
+  </div>
 </section>
-<section class="method section" id="metodo"><div class="container"><div class="section-heading reveal"><div><p class="eyebrow">IL NOSTRO METODO</p><h2>Un unico interlocutore.<br>  Dall’inizio. Ogni giorno.</h2></div><p>Affianchiamo l’ente in ogni fase del progetto,<br>  con un servizio che continua nel tempo.</p></div><div class="method-grid"><article class="reveal"><span>01 / ASCOLTO</span><h3>Partiamo<br>  dal territorio.</h3><p>Analizziamo le esigenze dell’ente e supportiamo la progettazione della soluzione.</p></article><article class="reveal"><span>02 / ATTIVAZIONE</span><h3>Portiamo il progetto<br>  sulla strada.</h3><p>Fornitura, installazione e configurazione dei dispositivi. Per la sosta, anche segnaletica e organizzazione del servizio.</p></article><article class="reveal"><span>03 / CONTINUITÀ</span><h3>Restiamo<br>  al vostro fianco.</h3><p>Manutenzione, assistenza tecnica e supporto alla gestione operativa, dal back office al front end.</p></article></div><div class="service-line reveal"><span>La formula adatta al tuo ente.</span><div><span>Noleggio</span><span>Vendita</span><span>Gestione integrata</span></div></div></div></section>
-<section class="company section container" id="azienda"><p class="eyebrow reveal">HYPNOS SRL</p><div class="company-layout"><h2 class="reveal">Tecnologia al servizio<br>  di chi si prende cura<br>  <span>della città.</span></h2><div class="company-copy reveal"><p>Lavoriamo con Comandanti, Funzionari e Operatori di Polizia Locale, Comuni ed Enti locali.</p><p>Uniamo tecnologie, sviluppo software e supporto professionale per accompagnare le amministrazioni nella sicurezza stradale e nella gestione della sosta.</p><div class="company-extra"><span>ANCHE AL FIANCO DEGLI ENTI PER</span><h3>Gestione tributi.</h3><p>Consulenza e supporto alle amministrazioni locali per contribuire ai loro obiettivi.</p><a class="text-button" href="#contatti">Parliamo delle tue esigenze <span aria-hidden="true">+</span></a></div></div></div></section>
-<section class="contact section" id="contatti"><div class="container contact-layout"><div class="contact-copy reveal"><p class="eyebrow">IL PROSSIMO PASSO, INSIEME</p><h2>Ogni città<br>  ha le sue esigenze.<br>  <span>Parliamone.</span></h2><p>Raccontaci cosa vuoi migliorare.<br>  Ti aiutiamo a individuare il percorso adatto.</p><div class="contact-details"><a href="mailto:info@hypnosweb.it">info@hypnosweb.it</a><a href="tel:+390240042393">+39 02 40042393</a><a class="contact-whatsapp" href="https://wa.me/+390240042393" target="_blank" rel="noopener">Scrivici su WhatsApp</a><span>Via del Gonfalone 3<br>  20123 Milano, Italia</span></div></div>
-<form class="contact-form reveal" id="contact-form"><h3>Da dove iniziamo?</h3><label for="name">Nome e cognome</label><input id="name" name="name" autocomplete="name" required placeholder="Il tuo nome"><div class="form-row"><div><label for="email">E-mail</label><input id="email" type="email" name="email" autocomplete="email" required placeholder="nome@ente.it"></div><div><label for="phone">Telefono <span>(facoltativo)</span></label><input id="phone" type="tel" name="phone" autocomplete="tel" placeholder="Il tuo numero"></div></div><label for="interest">La tua esigenza</label><select id="interest" name="interest"><option value="Consulenza generale">Vorrei una consulenza</option><option>Parcometri e gestione della sosta</option><option>Autovelox</option><option>Tutor</option><option>Varchi ZTL</option><option>Lettura targhe</option><option>Software e supporto operativo</option><option>Gestione tributi</option></select><label for="message">Il tuo progetto</label><textarea id="message" name="message" rows="3" required placeholder="Raccontaci le esigenze del tuo ente…"></textarea><label class="privacy-check"><input type="checkbox" required><span>Ho letto l’<a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">informativa sulla privacy</a>.</span></label><button class="button dark" type="submit">Prepara la richiesta</button><p class="form-note">La richiesta verrà aperta nel tuo programma di posta.</p></form></div></section>
+
+<!-- ============ SOSTA ============ -->
+<section class="parking" id="sosta" data-nav="light">
+  <div class="wrap parking__grid">
+    <div class="parking__copy">
+      <p class="eyebrow">Gestione della sosta a pagamento</p>
+      <h2 class="split">La sosta, chiavi in mano.</h2>
+      <p>Affianchiamo i Comandi di Polizia Locale nella gestione integrata delle aree in cui la sosta è regolamentata e soggetta a pagamento. Un unico servizio, dal primo sopralluogo alla gestione quotidiana.</p>
+      <ol class="steps-list" id="parking-list">
+        <li><b>Fornitura</b><span>Parcometri moderni, scelti in base al contesto.</span></li>
+        <li><b>Installazione</b><span>Posa e configurazione su strada.</span></li>
+        <li><b>Segnaletica</b><span>Orizzontale e verticale, realizzata da noi.</span></li>
+        <li><b>Manutenzione</b><span>Interventi programmati e su chiamata.</span></li>
+        <li><b>Gestione</b><span>Con personale altamente qualificato.</span></li>
+      </ol>
+    </div>
+    <div class="parking__visual">
+      <figure class="parking__photo"><img src="assets/img/parcometro.webp" alt="Parcometro e auto in sosta lungo le strisce blu" loading="lazy" width="1536" height="1024"></figure>
+      <svg class="parking__plan" id="parking-plan" viewBox="0 0 600 260" aria-hidden="true">
+        <rect x="0" y="0" width="600" height="260" rx="18" class="pl-bg"/>
+        <line x1="20" y1="168" x2="580" y2="168" class="pl-curb"/>
+        <g class="pl-stalls"></g>
+        <g class="pl-cars"></g>
+        <g class="pl-meter" transform="translate(300 196)"><rect x="-7" y="-20" width="14" height="30" rx="3"/><circle cx="0" cy="-26" r="10" class="pl-pulse"/></g>
+        <text x="24" y="232" class="pl-label">STALLI BLU · VIA ESEMPIO</text>
+        <text x="576" y="232" class="pl-label pl-occ" text-anchor="end" id="pl-occ">OCCUPAZIONE 0%</text>
+      </svg>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VERBALI / SERVIZIO INTEGRATO ============ -->
+<section class="pipeline" id="verbali" data-nav="dark">
+  <div class="pipeline__bg" aria-hidden="true"><img src="assets/img/tutor.webp" alt="" loading="lazy"></div>
+  <div class="wrap">
+    <div class="pipeline__head">
+      <p class="eyebrow eyebrow--light">Noleggio Tutor, autovelox, ZTL e relativa gestione</p>
+      <h2 class="split">Dal rilevamento al verbale.<br>Un servizio integrato.</h2>
+      <p>Non solo apparecchiature: affianchiamo il Comando nella gestione del servizio integrato dei verbali generati dai dispositivi, lasciando agli operatori il controllo di ogni decisione.</p>
+    </div>
+    <div class="flow" id="flow">
+      <svg class="flow__line" viewBox="0 0 1000 4" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="2" x2="1000" y2="2" class="flow__base"/><line x1="0" y1="2" x2="1000" y2="2" class="flow__prog" id="flow-prog"/></svg>
+      <div class="flow__step"><i>01</i><h3>Rilevazione</h3><p>Il dispositivo acquisisce immagini e dati dell’evento.</p></div>
+      <div class="flow__step"><i>02</i><h3>Validazione</h3><p>L’operatore verifica ogni evento prima di procedere.</p></div>
+      <div class="flow__step"><i>03</i><h3>Verbalizzazione</h3><p>Il verbale viene generato in modo ordinato e tracciabile.</p></div>
+      <div class="flow__step"><i>04</i><h3>Notifica</h3><p>Gestione degli invii e delle comunicazioni.</p></div>
+      <div class="flow__step"><i>05</i><h3>Rendicontazione</h3><p>Report chiari per il Comando e l’amministrazione.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOFTWARE ============ -->
+<section class="software" id="software" data-nav="light">
+  <div class="wrap software__grid">
+    <div class="software__copy">
+      <p class="eyebrow">Sviluppo software per Polizie Locali e PA</p>
+      <h2 class="split">Meno complessità.<br>Più controllo.</h2>
+      <p>La tecnologia in strada ha bisogno di strumenti chiari in ufficio. Sviluppiamo software per la gestione della sicurezza stradale e restiamo al fianco degli operatori con un supporto professionale e continuativo.</p>
+      <div class="kpis">
+        <div><b>24/7</b><span>Dispositivi operativi, giorno e notte</span></div>
+        <div><b>1</b><span>Interlocutore, dalla strada all’ufficio</span></div>
+        <div><b>360°</b><span>Dal back office al front end</span></div>
+      </div>
+    </div>
+    <div class="dash" id="dash" aria-label="Esempio illustrativo di interfaccia gestionale">
+      <div class="dash__bar"><span class="dash__dots"><i></i><i></i><i></i></span><span>HYPNOS · Centrale transiti</span><span class="dash__live"><i></i>LIVE</span></div>
+      <div class="dash__body">
+        <div class="dash__map">
+          <img src="assets/img/aerial.webp" alt="" loading="lazy">
+          <span class="dash__pin" style="--x:63%;--y:52%"><i></i>CAM 04</span>
+          <span class="dash__pin" style="--x:22%;--y:30%"><i></i>ZTL 02</span>
+          <span class="dash__pin" style="--x:80%;--y:76%"><i></i>VEL 01</span>
+        </div>
+        <div class="dash__side">
+          <div class="dash__stat"><span>Transiti oggi</span><b id="dash-count">12.480</b><svg viewBox="0 0 120 32" class="spark"><polyline id="spark" points=""/></svg></div>
+          <div class="dash__list"><div class="dash__head"><span>Ora</span><span>Targa</span><span>Varco</span><span>Esito</span></div><ul id="dash-list"></ul></div>
+        </div>
+      </div>
+      <p class="dash__note">Interfaccia illustrativa · dati fittizi</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ METODO ============ -->
+<section class="method" id="metodo" data-nav="light">
+  <div class="wrap">
+    <div class="method__head">
+      <p class="eyebrow">Il nostro metodo</p>
+      <h2 class="split">Dall’analisi alla gestione.<br>Sempre al vostro fianco.</h2>
+    </div>
+    <div class="method__track" id="method">
+      <div class="method__line"><i id="method-fill"></i></div>
+      <div class="method__step"><span>01</span><h3>Analisi delle esigenze</h3><p>Ascoltiamo il Comando e studiamo il territorio.</p></div>
+      <div class="method__step"><span>02</span><h3>Progettazione</h3><p>Supporto nella definizione della soluzione più adatta.</p></div>
+      <div class="method__step"><span>03</span><h3>Installazione</h3><p>Fornitura, posa e configurazione dei dispositivi.</p></div>
+      <div class="method__step"><span>04</span><h3>Manutenzione</h3><p>Assistenza tecnica per mantenere tutto efficiente.</p></div>
+      <div class="method__step"><span>05</span><h3>Gestione operativa</h3><p>Dal back office al front end, ogni giorno.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AZIENDA + TRIBUTI ============ -->
+<section class="company" id="azienda" data-nav="dark">
+  <div class="wrap company__grid">
+    <div class="company__main">
+      <p class="eyebrow eyebrow--light">HYPNOS Srl · Milano</p>
+      <h2 class="split">Tecnologia al servizio di chi si prende cura della città.</h2>
+      <p>Ci rivolgiamo a Comandanti, Funzionari e Operatori di Polizia Locale, con un ricco assortimento di servizi: dal noleggio alla vendita, fino al supporto tecnico dei gestionali progettati. Dalla presentazione di prodotti e servizi per l’attività in ufficio e in strada, fino all’installazione.</p>
+      <ul class="audience"><li>Comandanti</li><li>Funzionari</li><li>Operatori di Polizia Locale</li><li>Comuni ed Enti locali</li></ul>
+    </div>
+    <aside class="tributi">
+      <span class="tributi__tag">Anche</span>
+      <h3>Gestione tributi</h3>
+      <p>Partner affidabile di Comuni ed Enti locali, con lo scopo di contribuire al raggiungimento dei loro obiettivi.</p>
+      <a class="link-arrow" href="#contatti">Richiedi informazioni <span aria-hidden="true">→</span></a>
+    </aside>
+  </div>
+  <div class="marquee" aria-hidden="true"><div class="marquee__inner"><span>Lettura targhe</span><span>Autovelox</span><span>Tutor</span><span>ZTL</span><span>Parcometri</span><span>Software</span><span>Gestione tributi</span><span>Lettura targhe</span><span>Autovelox</span><span>Tutor</span><span>ZTL</span><span>Parcometri</span><span>Software</span><span>Gestione tributi</span></div></div>
+</section>
+
+<!-- ============ CONTATTI ============ -->
+<section class="contact" id="contatti" data-nav="light">
+  <div class="wrap contact__grid">
+    <div class="contact__copy">
+      <p class="eyebrow">Hai bisogno di una consulenza?</p>
+      <h2 class="contact__title split">Parliamone.</h2>
+      <p>Raccontaci cosa vuoi migliorare sul tuo territorio. Ti aiutiamo a trovare la soluzione più adatta.</p>
+      <dl class="contact__list">
+        <div><dt>Sede</dt><dd><a href="https://maps.google.com/?q=Via+del+Gonfalone+3,+20123+Milano" target="_blank" rel="noopener">Via del Gonfalone 3<br>20123 Milano, Italia</a></dd></div>
+        <div><dt>Telefono</dt><dd><a href="tel:+390240042393">+39 02 4004 2393</a></dd></div>
+        <div><dt>Fax</dt><dd>+39 02 5656 2961</dd></div>
+        <div><dt>E-mail</dt><dd><a href="mailto:info@hypnosweb.it">info@hypnosweb.it</a></dd></div>
+        <div><dt>WhatsApp</dt><dd><a href="https://wa.me/390240042393" target="_blank" rel="noopener">Scrivici su WhatsApp</a></dd></div>
+      </dl>
+    </div>
+    <form class="form" id="contact-form" novalidate>
+      <div class="field"><input id="f-name" name="name" autocomplete="name" required placeholder=" "><label for="f-name">Nome e cognome</label></div>
+      <div class="field"><input id="f-ente" name="ente" autocomplete="organization" placeholder=" "><label for="f-ente">Ente o Comando</label></div>
+      <div class="field-row">
+        <div class="field"><input id="f-email" type="email" name="email" autocomplete="email" required placeholder=" "><label for="f-email">E-mail</label></div>
+        <div class="field"><input id="f-phone" type="tel" name="phone" autocomplete="tel" placeholder=" "><label for="f-phone">Telefono</label></div>
+      </div>
+      <fieldset class="chips"><legend>Ti interessa</legend>
+        <label><input type="checkbox" name="topic" value="Lettura targhe"><span>Lettura targhe</span></label>
+        <label><input type="checkbox" name="topic" value="Autovelox"><span>Autovelox</span></label>
+        <label><input type="checkbox" name="topic" value="Tutor"><span>Tutor</span></label>
+        <label><input type="checkbox" name="topic" value="ZTL"><span>ZTL</span></label>
+        <label><input type="checkbox" name="topic" value="Parcometri"><span>Parcometri</span></label>
+        <label><input type="checkbox" name="topic" value="Software"><span>Software</span></label>
+        <label><input type="checkbox" name="topic" value="Gestione tributi"><span>Tributi</span></label>
+      </fieldset>
+      <div class="field"><textarea id="f-msg" name="message" rows="4" required placeholder=" "></textarea><label for="f-msg">Messaggio</label></div>
+      <label class="privacy"><input type="checkbox" id="f-privacy" required><span>Ho preso visione e accetto l’<a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">informativa sulla privacy</a>.</span></label>
+      <button class="btn btn--dark btn--wide" type="submit"><span>Prepara la richiesta</span><i aria-hidden="true">→</i></button>
+      <p class="form__note" id="form-note">La richiesta si aprirà nel tuo programma di posta, pronta da inviare.</p>
+    </form>
+  </div>
+</section>
 </main>
-<footer class="container"><div class="footer-top"><a class="brand" href="#"><span class="brand-mark" aria-hidden="true">H</span>HYPNOS<span class="brand-srl">SRL</span></a><span>Tecnologie e servizi per il territorio.</span><a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">Privacy</a></div><div class="footer-bottom"><span>© 2026 HYPNOS Srl</span><span>P. IVA e C.F. 10682130967 · REA MI-2550012</span><span>Milano, Italia</span></div></footer>
-<dialog class="product-dialog" id="product-dialog" aria-labelledby="dialog-title"><button class="dialog-close" aria-label="Chiudi dettagli prodotto">×</button><div id="dialog-content"></div></dialog>
-<dialog class="email-dialog" id="email-dialog" aria-labelledby="email-title"><button class="dialog-close" aria-label="Chiudi riepilogo">×</button><p class="eyebrow">LA TUA RICHIESTA</p><h2 id="email-title">Pronta per HYPNOS.</h2><p>Controlla il riepilogo, poi apri la richiesta nel tuo programma di posta.</p><div id="email-summary"></div><a class="button dark" id="email-link" href="mailto:info@hypnosweb.it">Apri e-mail</a><p class="form-note">Il messaggio sarà inviato solo quando lo confermerai nel programma di posta.</p></dialog>
-</body></html>
+
+<footer class="footer" data-nav="dark">
+  <div class="wrap">
+    <div class="footer__top">
+      <a class="footer__logo" href="#top" aria-label="HYPNOS Srl">
+        <svg aria-hidden="true"><use href="#hmark"/></svg><span>HYPNOS</span>
+      </a>
+      <nav class="footer__nav" aria-label="Collegamenti a piè di pagina">
+        <a href="#soluzioni">Soluzioni</a><a href="#sosta">Sosta</a><a href="#verbali">Servizi</a><a href="#software">Software</a><a href="#azienda">Azienda</a><a href="#contatti">Contatti</a>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <span>© 2026 HYPNOS Srl · Tutti i diritti riservati</span>
+      <span>C.F. e P.IVA 10682130967 · REA MI-2550012</span>
+      <a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">Privacy</a>
+    </div>
+  </div>
+</footer>
+
+<dialog class="mail-dialog" id="mail-dialog" aria-labelledby="mail-title">
+  <p class="eyebrow">La tua richiesta</p>
+  <h2 id="mail-title">Pronta per HYPNOS.</h2>
+  <p>Controlla il riepilogo: il messaggio partirà solo quando lo confermerai dal tuo programma di posta.</p>
+  <pre id="mail-summary"></pre>
+  <div class="mail-dialog__actions"><button class="btn btn--ghost" id="mail-close" type="button">Modifica</button><a class="btn btn--dark" id="mail-link" href="mailto:info@hypnosweb.it">Apri e-mail</a></div>
+</dialog>
+</body>
+</html>

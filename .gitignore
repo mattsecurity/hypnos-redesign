@@ -1,2 +1,6 @@
 /sites*.tar.gz
 /.sites-runtime/
+/assets-src/*.png
+/assets-src/*.log
+/assets-src/*.done
+/site.tar.gz
