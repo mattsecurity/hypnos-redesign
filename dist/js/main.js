@@ -316,7 +316,7 @@ function sectionMotion() {
       onUpdate: () => cards.forEach(c => {
         const r = c.getBoundingClientRect();
         const k = ((r.left + r.width / 2) / innerWidth - .5);
-        c.style.setProperty('--px', `${-8 - k * 10}%`);
+        c.style.setProperty('--px', `${gsap.utils.clamp(-16, -0.5, -8.33 - k * 10)}%`);
       }),
     });
     gsap.from(cards, { y: 80, opacity: 0, duration: 1.2, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: track, start: 'top 85%' } });
