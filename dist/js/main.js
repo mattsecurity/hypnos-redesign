@@ -312,7 +312,7 @@ function sectionMotion() {
     const dist = () => track.scrollWidth - innerWidth;
     const tween = gsap.to(track, { x: () => -dist(), ease: 'none' });
     const st = ScrollTrigger.create({
-      trigger: '#soluzioni', start: 'top top', end: () => `+=${dist()}`, pin: true, scrub: .8, animation: tween, invalidateOnRefresh: true,
+      trigger: track, pin: '#hscroll', start: 'center 54%', end: () => `+=${dist()}`, scrub: .8, animation: tween, invalidateOnRefresh: true,
       onUpdate: () => cards.forEach(c => {
         const r = c.getBoundingClientRect();
         const k = ((r.left + r.width / 2) / innerWidth - .5);

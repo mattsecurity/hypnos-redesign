@@ -172,7 +172,7 @@ p { margin: 0; }
 .hscroll { overflow: hidden; padding-bottom: clamp(80px, 9vw, 130px); }
 .hscroll__track { display: flex; gap: 22px; padding: 0 var(--gutter); width: max-content; will-change: transform; }
 .card { width: clamp(300px, 34vw, 500px); flex: none; background: var(--mist); border-radius: 22px; overflow: hidden; display: flex; flex-direction: column; }
-.card__media { aspect-ratio: 4 / 3; overflow: hidden; position: relative; }
+.card__media { aspect-ratio: 4 / 3; max-height: max(170px, calc(100svh - 500px)); overflow: hidden; position: relative; }
 .card__media img { width: 120%; max-width: none; height: 100%; object-fit: cover; transform: translateX(var(--px, -8%)) scale(1.02); transition: transform 1.2s var(--ease); }
 .card:hover .card__media img { transform: translateX(var(--px, -8%)) scale(1.07); }
 .card__body { padding: 28px 30px 34px; display: grid; gap: 14px; }
