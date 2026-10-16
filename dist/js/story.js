@@ -67,7 +67,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const hdrLoader = new HDRLoader(manager);
   const loadTex = (url, srgb = true) => new Promise((res, rej) => texLoader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, rej));
 
-  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex] = await Promise.all([
+  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex, paveD, paveN] = await Promise.all([
     loadTex('assets/img/aerial.webp'),
     loadTex('assets/img/aerial-lod1.webp'),
     loadTex('assets/tex/asphalt_diff.jpg'),
@@ -79,12 +79,14 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     loadTex('assets/3d/sedan-atlas-n.jpg', false),
     loadDriver(gltfLoader),
     loadTex('assets/tex/median-veg.webp'),
+    loadTex('assets/tex/pavement_diff.jpg'),
+    loadTex('assets/tex/pavement_nor.jpg', false),
   ]);
   draco.dispose();
   env.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = env;
   scene.environmentIntensity = 0.55;
-  asph.wrapS = asph.wrapT = THREE.RepeatWrapping;
+  for (const t of [asph, paveD, paveN]) t.wrapS = t.wrapT = THREE.RepeatWrapping;
   for (const t of [aerial, lod1]) { t.generateMipmaps = true; t.minFilter = THREE.LinearMipmapLinearFilter; }
 
   /* ---------- lights (match the blue-hour photo) ---------- */
@@ -95,7 +97,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   /* ---------- ground: photo LODs + asphalt micro-detail + analytic headlights ---------- */
   const MAX_CARS = 6;
   const groundU = {
-    tLod0: { value: aerial }, tLod1: { value: lod1 }, tDetail: { value: asph },
+    tLod0: { value: aerial }, tLod1: { value: lod1 }, tDetail: { value: asph }, tPave: { value: paveD }, tPaveN: { value: paveN }, uLamps: { value: [] },
     uLod1: { value: 0 }, uDetail: { value: 0 }, uCars: { value: Array.from({ length: MAX_CARS }, () => new THREE.Vector4(9999, 0, 1, 0)) },
     uReveal: { value: 1 }, uCamPos: { value: new THREE.Vector3() }, uFogColor: { value: new THREE.Color(0x121b2a) }, uFogNear: { value: 70 }, uFogFar: { value: 260 },
   };
@@ -105,7 +107,8 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       varying vec3 vW;
       void main(){ vec4 w = modelMatrix * vec4(position,1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: /* glsl */`
-      uniform sampler2D tLod0, tLod1, tDetail; uniform float uLod1, uDetail, uReveal;
+      uniform sampler2D tLod0, tLod1, tDetail, tPave, tPaveN; uniform float uLod1, uDetail, uReveal;
+      uniform vec3 uLamps[${LAMPS_X.length * LAMP_Z.length}];
       uniform vec4 uCars[${MAX_CARS}]; uniform vec3 uCamPos, uFogColor; uniform float uFogNear, uFogFar;
       varying vec3 vW;
       float lum(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
@@ -157,25 +160,45 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         float dl = lum(d) / .19 * .6 + lum(d2) / .19 * .2 + lum(d3) / .19 * .2;
         float side = smoothstep(-22.6, -22.3, p.y) * (1. - smoothstep(-10.7, -10.45, p.y)) + smoothstep(8.95, 9.2, p.y) * (1. - smoothstep(21.1, 21.4, p.y));
         // crisp aggregate: full-strength asphalt on the carriageways, a stone grain on the pavements
-        c *= mix(1., clamp(dl, .4, 1.9), uDetail * (road * .95 + side * .55 * uReveal + (1. - road - side) * .3));
+        c *= mix(1., clamp(dl, .4, 1.9), uDetail * (road * .95 + (1. - road - side) * .3));
         // fine wear: tyre polish along the wheel tracks, darker oil-stained lane centres
         float lanePos = fract((p.y - ${ROAD.south[0].toFixed(2)}) / 3.9);
         float tracks = smoothstep(.12, .0, abs(lanePos - .27)) + smoothstep(.12, .0, abs(lanePos - .73));
         c *= 1. + road * uDetail * (tracks * .06 - smoothstep(.1, .0, abs(lanePos - .5)) * .07);
-        // crisp features that a real drone frame resolves: hairline cracks, tar-sealed seams, repair patches
+        // crisp features that a real drone frame resolves: hairline cracks, tar-sealed seams
         float crackMask = smoothstep(.62, .8, vn(p * .23 + 11.));
         float crack = isoLine(fbm2(p * vec2(.9, 2.2)), 1.4) * crackMask;
         float seam = isoLine(fract((p.y + .35 * sin(p.x * .07)) / 4.2) * .999 + .001 * vn(p * 3.), 1.6) * .6;
-        vec2 pc = floor(p / vec2(5.5, 2.2)); float patchOn = step(.93, h12(pc + 4.));
-        vec2 pf = fract(p / vec2(5.5, 2.2));
-        float repair = patchOn * step(.15, pf.x) * step(pf.x, .8) * step(.2, pf.y) * step(pf.y, .85);
         c *= 1. - road * uDetail * (crack * .28 + seam * .22);
-        c = mix(c, c * vec3(.78, .8, .84), road * uDetail * repair);
-        // sidewalks: the photo's trees are replaced by 3D ones → turn their imprint into shaded paving, add slab joints
-        float gr = clamp((cb.g - max(cb.r, cb.b)) * 18. + .15, 0., 1.);
-        c = mix(c, vec3(lum(cb)) * vec3(.62, .6, .58) * mix(.9, 1.15, dl), side * gr * uDetail * uReveal);
-        float jx = smoothstep(.46, .5, abs(fract(p.x / .9) - .5)), jz = smoothstep(.46, .5, abs(fract(p.y / .6 + .5 * step(.5, fract(p.x / 1.8))) - .5));
-        c *= 1. - side * uDetail * uReveal * .22 * max(jx, jz);
+        // sidewalks (close shots): real granite-chip slabs (Poly Haven concrete_pavement_02, 1.8 m tile);
+        // the photo only contributes its light — lamp pools, warm tint, soft shade — never its blurred texture
+        // not across the side-street mouths (they stay asphalt from the photo)
+        float gapN = 0., gapS = 0.;
+        ${CITY.gapsN.map(([a, b]) => `gapN += smoothstep(${(a - .3).toFixed(2)}, ${(a + .3).toFixed(2)}, p.x) * (1. - smoothstep(${(b - .3).toFixed(2)}, ${(b + .3).toFixed(2)}, p.x));`).join('\n        ')}
+        ${CITY.gapsS.map(([a, b]) => `gapS += smoothstep(${(a - .3).toFixed(2)}, ${(a + .3).toFixed(2)}, p.x) * (1. - smoothstep(${(b - .3).toFixed(2)}, ${(b + .3).toFixed(2)}, p.x));`).join('\n        ')}
+        float sidePave = side * (1. - (p.y < 0. ? gapN : gapS));
+        // side-street mouths: plain asphalt continuing from the avenue (no flat photo trees / kerb arcs)
+        float gapA = side * (p.y < 0. ? gapN : gapS);
+        vec3 mouth = blurAt(vec2(p.x, p.y < 0. ? -6.3 : 4.7), w1) * clamp(dl, .45, 1.8) * .92;
+        c = mix(c, mouth, gapA * uReveal);
+        vec2 tp = p / 1.8;
+        vec3 pav = texture2D(tPave, tp).rgb;
+        vec3 pn = texture2D(tPaveN, tp).xyz * 2. - 1.;
+        vec3 nw = normalize(vec3(pn.x, pn.z, -pn.y));
+        float relief = .8 + .28 * max(dot(nw, normalize(vec3(.3, 1., .2))), 0.);
+        // street lamps (cosine-weighted point lights at the real 3D lamp heads) + blue-hour sky
+        vec3 light = vec3(.13, .15, .2);
+        for (int i = 0; i < ${LAMPS_X.length * LAMP_Z.length}; i++) {
+          vec3 L = uLamps[i] - vec3(p.x, .15, p.y);
+          float d2 = dot(L, L);
+          light += vec3(1., .74, .47) * 62. * L.y * inversesqrt(d2) / d2;
+        }
+        // keep a whisper of the photo's own light variation (shop windows, entrances)
+        light *= mix(.85, 1.15, smoothstep(.05, .35, lum(blurAt(p, w1))));
+        // grime towards the facades / kerb
+        float edgeGrime = 1. - .18 * ((1. - smoothstep(-22.6, -21.6, p.y)) + smoothstep(20.4, 21.4, p.y) + smoothstep(-11.2, -10.45, p.y) + (1. - smoothstep(8.95, 9.7, p.y)));
+        vec3 cSide = pav * relief * light * edgeGrime;
+        c = mix(c, cSide, sidePave * uReveal);
         // headlights & tail-lights of moving cars (x, z, dirX, on)
         vec3 add = vec3(0.);
         for (int i = 0; i < ${MAX_CARS}; i++) {
@@ -224,6 +247,16 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const m4 = new THREE.Matrix4(); let di = 0;
   for (const z of [ROAD.dashS, ROAD.dashN]) for (let x = -CITY.extent + 4; x < CITY.extent - 4 && di < 160; x += 6.5) { m4.makeTranslation(x, .012, z); dashes.setMatrixAt(di++, m4); }
   dashes.count = di; scene.add(dashes);
+  // zebra crossings across each side-street mouth, just behind the kerb line
+  {
+    const zg = new THREE.PlaneGeometry(.5, 3.2); zg.rotateX(-Math.PI / 2);
+    var zebra = new THREE.InstancedMesh(zg, paintMat, 200); let zi = 0; const zm = new THREE.Matrix4();
+    for (const [gaps, zc] of [[CITY.gapsN, -12.6], [CITY.gapsS, 11.1]]) for (const [a, b] of gaps) {
+      if (Math.abs(a) > GW / 2 + 30) continue;
+      for (let x = a + .5; x < b - .4 && zi < 200; x += 1.0) { zm.makeTranslation(x, .013, zc); zebra.setMatrixAt(zi++, zm); }
+    }
+    zebra.count = zi; scene.add(zebra);
+  }
   for (const z of ROAD.edges) {
     const g = new THREE.PlaneGeometry(CITY.extent * 2, .13); g.rotateX(-Math.PI / 2);
     const l = new THREE.Mesh(g, paintMat); l.position.set(0, .011, z); scene.add(l);
@@ -236,13 +269,30 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const headGeo = new RoundedBoxGeometry(.75, .12, .3, 2, .04);
   const glowGeo = new THREE.PlaneGeometry(.6, .2); glowGeo.rotateX(Math.PI / 2);
   const lampHeads = [];
+  // cast-iron base, collar and a soft contact shadow so the posts sit on the paving
+  const baseGeo = (() => {
+    const pts = [[0, 0], [.17, 0], [.17, .05], [.14, .08], [.13, .45], [.11, .52], [.1, .62], [.085, .66], [0, .66]].map(([r, y]) => new THREE.Vector2(r, y));
+    const g = new THREE.LatheGeometry(pts, 20); g.translate(0, .15, 0); return g;
+  })();
+  const lampShadowMat = (() => {
+    const c = document.createElement('canvas'); c.width = c.height = 64; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(32, 32, 2, 32, 32, 32); gr.addColorStop(0, 'rgba(0,0,0,.75)'); gr.addColorStop(.35, 'rgba(0,0,0,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 64, 64);
+    return new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -4 });
+  })();
+  const shadowGeo = new THREE.PlaneGeometry(1.1, 1.1); shadowGeo.rotateX(-Math.PI / 2);
+  const addLampFoot = (x, z) => {
+    const b = new THREE.Mesh(baseGeo, lampPole); b.position.set(x, 0, z); scene.add(b);
+    const sh = new THREE.Mesh(shadowGeo, lampShadowMat); sh.position.set(x, .152, z); sh.renderOrder = 1; scene.add(sh);
+  };
   for (const z of LAMP_Z) for (const x of LAMPS_X) {
     const side = z < 0 ? 1 : -1; // heads lean towards the road
-    const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(x, 0, z); scene.add(p);
+    const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(x, 0, z); scene.add(p); addLampFoot(x, z);
     const h = new THREE.Mesh(headGeo, lampPole); h.position.set(x, 7.25, z + side * .25); scene.add(h);
     const g = new THREE.Mesh(glowGeo, lampGlow); g.position.set(x, 7.18, z + side * .25); scene.add(g);
     lampHeads.push(V(x, 7.0, z + side * .25));
   }
+  groundU.uLamps.value = lampHeads;
   // soft halo around each lamp head: humid evening air
   {
     const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
@@ -255,7 +305,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   // the avenue's lamps continue past the photo (visual only)
   if (!isLow) for (const z of LAMP_Z) for (let x = 93; x < CITY.extent; x += 19) for (const sx of [-1, 1]) {
     const side = z < 0 ? 1 : -1, xx = sx * x;
-    const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(xx, 0, z); scene.add(p);
+    const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(xx, 0, z); scene.add(p); addLampFoot(xx, z);
     const h = new THREE.Mesh(headGeo, lampPole); h.position.set(xx, 7.25, z + side * .25); scene.add(h);
     const g = new THREE.Mesh(glowGeo, lampGlow); g.position.set(xx, 7.18, z + side * .25); scene.add(g);
   }
@@ -656,7 +706,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     // high aerial shots = the original photo; below ~70 m the 3D city (trees, planted median, lamps…) dissolves in,
     // so the close shots stay crisp instead of showing a magnified photo
     const reveal = Math.max(ease(range(p, .462, .495)), ease(clamp((70 - shot.pos.y) / 28)));
-    city.setReveal(reveal); groundU.uReveal.value = reveal; haloMat.opacity = .55 * reveal;
+    city.setReveal(reveal); groundU.uReveal.value = reveal; haloMat.opacity = .55 * reveal; zebra.visible = reveal > .5;
     if (window.__cam) { const c = window.__cam; shot.pos.set(...c.pos); shot.look.set(...c.look); shot.up.set(0, 1, 0); shot.fov = c.fov || 40; shot.roll = 0; }
     updateLampPool(tmpB.copy(shot.look).lerp(hero.group.position, .5));
     camera.position.copy(shot.pos);
