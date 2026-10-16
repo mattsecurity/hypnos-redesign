@@ -19,13 +19,14 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 ```
 
-Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della sequenza.
+Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della sequenza; `?q=high` / `?q=low` forza la qualità.
 
 ## Tecnica della sequenza
 
 - Terreno: foto aerea zenitale generata (`assets/img/aerial.webp`) + un secondo livello di dettaglio (`aerial-lod1.webp`) generato a partire dal ritaglio centrale e allineato in colore. Lo shader del terreno fonde i due livelli in base alla quota, aggiunge micro-dettaglio d'asfalto reale (Poly Haven) e calcola in modo analitico i coni dei fari e le luci posteriori.
 - Segnaletica, cordoli, lampioni e palo sono geometria 3D allineata alle misure della foto.
-- **Città 3D** (`js/city.js`), allineata alla foto e prolungata oltre i suoi bordi: marciapiedi rialzati con cordoli in granito, aiuola spartitraffico con terra, siepi di bosso, rose (rosa, bianche, rosse) ed erba; filari di platani con aiuole quadrate alla base; palazzi del primo fronte con facciate milanesi procedurali (finestre accese, persiane, vetrine, portoni, cornicioni, balconi in ferro battuto) e tetti presi dalla foto aerea. La vegetazione è un unico sistema di card istanziate (alpha-to-coverage, vento, illuminazione dei lampioni con traslucenza).
+- **Città 3D** (`js/city.js`), allineata alla foto e prolungata oltre i suoi bordi: marciapiedi rialzati con cordoli in granito, aiuola spartitraffico all'italiana (pacciamatura, siepi di bosso potate sui due lati, rose arbustive rosa e bianche, sfere di bosso, ciuffi d'erba) fatta con ritagli fotografici generati (`assets/tex/median-veg.webp`, sorgenti in `assets-src/veg/`); filari di platani con aiuole quadrate alla base; palazzi del primo fronte con facciate milanesi procedurali (finestre accese, persiane, vetrine, portoni, cornicioni, balconi in ferro battuto) e tetti presi dalla foto aerea. La vegetazione è un unico sistema di card istanziate (alpha-to-coverage, vento, illuminazione dei lampioni con traslucenza).
+- Le inquadrature aeree restano la foto originale: la città 3D compare con una dissolvenza solo quando la camera scende verso il punto di controllo.
 - **Guidatore** (`js/driver.js`): avatar umano con scheletro, rivestito in abito scuro e camicia bianca (texture ricolorate), capelli corti aggiunti come guscio skinnato, seduto e messo in posa con IK analitica (mani sul volante, piedi sui pedali), micro-movimenti della testa.
 - **Camera**: movimento da drone con rumore organico, leggero rollio in virata, micro-oscillazione del palo nel feed; motion blur sui movimenti rapidi; aloni dei lampioni; cielo dell'ora blu nelle inquadrature radenti.
 - Post-produzione: bloom, profondità di campo vicino alla telecamera, grading con grana/vignettatura, modalità "feed" (distorsione, aberrazione, linee).

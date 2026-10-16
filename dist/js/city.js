@@ -131,7 +131,7 @@ function makeBarkTexture() {
 }
 
 /* ------------------------------------------------------------------ */
-export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
+export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, medianTex }) {
   const NL = lamps.length;
   const lampUniform = { value: lamps.map(v => v.clone()) };
   const timeU = { value: 0 };
@@ -167,14 +167,14 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
     const E = CITY.extent;
     for (const [x0, x1] of spans(-E, E, CITY.gapsN)) addSlab(x0, x1, CITY.sidewalkN[0], CITY.sidewalkN[1]);
     for (const [x0, x1] of spans(-E, E, CITY.gapsS)) addSlab(x0, x1, CITY.sidewalkS[0], CITY.sidewalkS[1]);
-    const topMesh = new THREE.Mesh(mergeGeometries(tops), groundMat); topMesh.renderOrder = -1; group.add(topMesh);
+    var topMesh = new THREE.Mesh(mergeGeometries(tops), groundMat); topMesh.renderOrder = -1; group.add(topMesh);
     const curbMesh = new THREE.Mesh(mergeGeometries(sides), granite); group.add(curbMesh);
   }
 
   /* ---------- vegetation (one instanced card system for all plants) ---------- */
   const atlas = makeVegetationAtlas();
   const vegU = {
-    tAtlas: { value: atlas }, uTime: timeU, uLamps: lampUniform, uLampI: lampI,
+    tAtlas: { value: atlas }, uTime: timeU, uLamps: lampUniform, uLampI: lampI, uAmb: { value: 1 }, uSway: { value: 1 },
     uSky: { value: new THREE.Color(sky.top) }, uGround: { value: new THREE.Color(sky.ground) },
     ...fogU,
   };
@@ -183,7 +183,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
     defines: { A2C_MIN: isLow ? '.5' : '.02' },
     vertexShader: /* glsl */`
       attribute vec3 aCenter; attribute vec4 aTint; attribute float aTile; attribute float aDepth;
-      uniform float uTime;
+      uniform float uTime, uSway;
       varying vec2 vUv; varying vec3 vW; varying vec3 vN; varying vec4 vTint; varying float vDepth;
       #include <fog_pars_vertex>
       void main(){
@@ -191,7 +191,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
         vUv = vec2((uv.x + tile.x) * .5, (uv.y + 1. - tile.y) * .5);
         vec4 w = modelMatrix * instanceMatrix * vec4(position, 1.);
         // wind: canopy sways more at the top/outside
-        float sway = (aDepth < .5 ? 1. : .4) * (.03 + .02 * sin(uTime * .7 + aCenter.x * .21));
+        float sway = uSway * (aDepth < .5 ? 1. : .4) * (.03 + .02 * sin(uTime * .7 + aCenter.x * .21));
         w.x += sin(uTime * 1.6 + w.y * .8 + aCenter.x * .5 + w.z * .3) * sway;
         w.z += cos(uTime * 1.3 + w.x * .6 + aCenter.z * .4) * sway * .7;
         vW = w.xyz;
@@ -204,7 +204,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
         #include <fog_vertex>
       }`,
     fragmentShader: /* glsl */`
-      uniform sampler2D tAtlas; uniform vec3 uSky, uGround;
+      uniform sampler2D tAtlas; uniform vec3 uSky, uGround; uniform float uAmb;
       varying vec2 vUv; varying vec3 vW; varying vec3 vN; varying vec4 vTint; varying float vDepth;
       ${LAMP_GLSL(NL)}
       #include <fog_pars_fragment>
@@ -217,7 +217,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
         vec3 alb = t.rgb * vTint.rgb;
         alb = mix(vec3(dot(alb, vec3(.3, .59, .11))), alb, .78) * .85;
         float ao = mix(1., .32, vDepth) * mix(.7, 1., smoothstep(0., 2.5, vW.y));
-        vec3 amb = mix(uGround, uSky, N.y * .5 + .5) * .5;
+        vec3 amb = mix(uGround, uSky, N.y * .5 + .5) * .5 * uAmb;
         vec3 lamp = lampLight(vW, N, .6);
         // light passing through leaves near the lamp heads
         vec3 trans = lampLight(vW, -N, .0) * .3 * vec3(.8, 1., .45);
@@ -228,11 +228,20 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
       }`,
   });
 
-  const cards = []; // {pos, rot(euler), scale, center, tint, tile, depth}
+  const cards = [];   // tree foliage (canvas atlas)
+  const mcards = [];  // median / tree-pit planting (photographic atlas)
   const tmpE = new THREE.Euler(), tmpQ = new THREE.Quaternion(), tmpM = new THREE.Matrix4(), tmpS = new THREE.Vector3(), tmpP = new THREE.Vector3();
-  const pushCard = (x, y, z, s, center, tint, tile, depth, upright = false) => {
+  const Z = new THREE.Vector3(0, 0, 1), Y = new THREE.Vector3(0, 1, 0);
+  const pushCard = (x, y, z, s, center, tint, tile, depth, upright = false, arr = cards) => {
     if (upright) tmpE.set(0, R() * Math.PI, 0); else tmpE.set(R() * Math.PI * 2, R() * Math.PI * 2, R() * Math.PI * 2);
-    cards.push({ x, y, z, s, rx: tmpE.x, ry: tmpE.y, rz: tmpE.z, c: center, tint, tile, depth, upright });
+    arr.push({ x, y, z, s, q: new THREE.Quaternion().setFromEuler(tmpE), c: center, tint, tile, depth });
+  };
+  // card facing out of a surface (normal n), random spin about the normal, small random tilt
+  const pushFacing = (p, n, s, tint, tile, depth, tilt = .45) => {
+    const nn = n.clone().add(new THREE.Vector3(R() - .5, R() - .5, R() - .5).multiplyScalar(tilt)).normalize();
+    const q = new THREE.Quaternion().setFromUnitVectors(Z, nn);
+    q.multiply(new THREE.Quaternion().setFromAxisAngle(Z, R() * Math.PI * 2));
+    mcards.push({ x: p.x, y: p.y, z: p.z, s, q, c: p.clone().addScaledVector(n, -.35), tint, tile, depth });
   };
   // canopy: points in an ellipsoid, biased to the shell
   function canopy(cx, cy, cz, rx, ry, rz, n, size, tile, tintFn) {
@@ -292,66 +301,109 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
     treePits.push([tx, tz]);
   }
 
-  /* --- median: soil bed, mixed shrubs, roses, grass edging --- */
+  /* --- median: a designed Italian flowerbed —
+         clipped boxwood edging on both sides, shrub roses (pink / white) and boxwood balls in the middle,
+         ornamental grass tufts; photographic cut-outs (assets/tex/median-veg.webp) ---------------------- */
   const mz0 = ROAD.medianZ0 + .2, mz1 = ROAD.medianZ1 - .2, mzc = (mz0 + mz1) / 2, mw = mz1 - mz0;
-  const shrubTypes = [
-    { tile: 1, tint: [.95, 1.05, .85], flowers: null },                  // boxwood
-    { tile: 1, tint: [.8, .95, .75], flowers: [1.0, .42, .62] },           // pink roses
-    { tile: 1, tint: [.9, 1.0, .8], flowers: [1.0, .97, .93] },            // white roses
-    { tile: 1, tint: [.85, .9, .7], flowers: [.85, .12, .18] },            // red roses
-    { tile: 0, tint: [.75, .9, .7], flowers: null },                       // laurel
-  ];
-  const shrubDensity = isLow ? .45 : 1;
+  const SOIL = .12;
+  const ME = isLow ? GW / 2 : 150;
+  const dens = x => (isLow ? .5 : 1) * (Math.abs(x - 28) < 70 ? 1 : .55);   // full density around the checkpoint
+  const V3 = (x, y, z) => new THREE.Vector3(x, y, z);
+  const BOX = 0, PINK = 1, WHITE = 2, GRASS = 3;
+  const boxTint = () => { const k = .8 + R() * .35; return [k * (.92 + R() * .1), k, k * (.9 + R() * .1), 0]; };
   {
-    const ME = isLow ? GW / 2 : 150;
+    // 1) clipped hedges: superellipse cross-section (squarish, softly rounded), cards facing out of the surface
+    const hw = .17, hh = .36;
+    for (const zc of [mz0 + .2, mz1 - .2]) {
+      let x = -ME;
+      while (x < ME) {
+        const segLen = 7 + R() * 5, x1 = Math.min(ME, x + segLen);
+        const per = Math.round(46 * dens(x));
+        const n = Math.round((x1 - x) * per);
+        for (let i = 0; i < n; i++) {
+          const px = x + .08 + R() * (x1 - x - .16);
+          const th = R() * Math.PI;                                  // 0 → outer side, π/2 → top, π → inner side
+          const c = Math.cos(th), sn = Math.sin(th);
+          const e = .5;                                              // 2/n with n = 4
+          const lz = Math.sign(c) * Math.pow(Math.abs(c), e) * hw, ly = Math.pow(sn, e) * hh;
+          const nz = Math.sign(lz) * Math.pow(Math.abs(lz / hw), 3) / hw, ny = Math.pow(ly / hh, 3) / hh;
+          const nrm = V3(0, ny, nz).normalize();
+          // gentle undulation along the hedge, so it doesn't read as an extrusion
+          const bump = .015 * Math.sin(px * 3.1 + zc) + .01 * Math.sin(px * 7.7);
+          const pnt = V3(px, SOIL + ly + bump, zc + lz).addScaledVector(nrm, -R() * .04);
+          pushFacing(pnt, nrm, .2 + R() * .1, boxTint(), BOX, R() * .15, .55);
+        }
+        // a few inner fill cards so the hedge never looks hollow
+        for (let i = 0; i < n * .15; i++) {
+          const px = x + R() * (x1 - x);
+          pushCard(px, SOIL + R() * hh * .8, zc + (R() - .5) * hw, .22, V3(px, SOIL + hh * .4, zc), boxTint().map((v, k) => k < 3 ? v * .55 : 0), BOX, .8, false, mcards);
+        }
+        x = x1 + .35 + R() * .3;                                    // small gap between hedge sections
+      }
+    }
+    // 2) centre band: rose shrubs in colour groups, punctuated by boxwood balls
     let x = -ME;
-    let type = shrubTypes[0], segEnd = x;
     while (x < ME) {
-      if (x > segEnd) { type = shrubTypes[(R() * shrubTypes.length) | 0]; segEnd = x + 4 + R() * 6; x += R() < .3 ? .8 + R() * 1.4 : 0; }
-      const nearPole = Math.abs(x - 28) < 1.4;
-      if (!nearPole) for (let row = 0; row < 2; row++) {
-        const z = mzc + (row - .5) * mw * .5 + (R() - .5) * .25;
-        const r = .34 + R() * .18, h = .32 + R() * .22;
-        const cy = .14 + h * .85;
-        const n = Math.round((60 + R() * 25) * shrubDensity);
-        const tn = type.tint;
-        canopy(x + (R() - .5) * .2, cy, z, r, h, r * .9, n, .3, type.tile, () => [tn[0] * (.85 + R() * .3), tn[1] * (.85 + R() * .3), tn[2] * (.85 + R() * .3), 0]);
-        if (type.flowers) {
-          const c = new THREE.Vector3(x, cy, z);
-          const fn = Math.round(16 * shrubDensity);
-          for (let k = 0; k < fn; k++) {
-            const u = R() * .9 + .1, th = R() * Math.PI * 2, s = Math.sqrt(1 - u * u);
-            const f = type.flowers;
-            pushCard(x + Math.cos(th) * s * r * 1.02, cy + u * h * 1.0, z + Math.sin(th) * s * r * 1.02, .17 + R() * .07, c, [f[0], f[1], f[2], .06], 2, 0);
-          }
+      const groupLen = 3.5 + R() * 3.5, kind = R() < .55 ? PINK : WHITE;
+      const x1 = Math.min(ME, x + groupLen);
+      for (let rx = x + .5; rx < x1 - .3; rx += .7 + R() * .25) {
+        if (Math.abs(rx - 28) < 1.1) continue;                       // clearance around the ANPR pole footing
+        const rz = mzc + (R() - .5) * .3, r = .33 + R() * .12, h = .48 + R() * .2;
+        const cen = V3(rx, SOIL, rz);
+        const nn = Math.round(46 * dens(rx));
+        for (let i = 0; i < nn; i++) {
+          const u = Math.pow(R(), .8), th = R() * Math.PI * 2;      // biased to the upper dome
+          const sxy = Math.sqrt(1 - u * u);
+          const nrm = V3(Math.cos(th) * sxy / r, u / h, Math.sin(th) * sxy / r).normalize();
+          // irregular, open shrub silhouette rather than a clipped dome
+          const lobe = 1 + .22 * Math.sin(th * 3 + rx * 5) + .12 * (R() - .5);
+          const pnt = V3(rx + Math.cos(th) * sxy * r * lobe, SOIL + u * h * (.9 + R() * .2), rz + Math.sin(th) * sxy * r * lobe).addScaledVector(nrm, -R() * .1);
+          // leafy shrub with blooms scattered over the top: ~40 % flower cards, the rest rose foliage
+          const bloom = u > .35 && R() < .55;
+          const k = .85 + R() * .25;
+          if (bloom) pushFacing(pnt, nrm, .16 + R() * .09, [k, k, k, .03], kind, 0, .7);
+          else pushFacing(pnt, nrm, .2 + R() * .08, [k * .55, k * .66, k * .5, 0], BOX, R() * .3, .8);
+        }
+        // woody leafy core
+        for (let i = 0; i < nn * .25; i++) pushCard(rx + (R() - .5) * r, SOIL + R() * h * .7, rz + (R() - .5) * r, .26, cen, [.4, .48, .36, 0], BOX, .8, false, mcards);
+      }
+      // boxwood ball between groups
+      const bx = x1 + .45;
+      if (bx < ME && Math.abs(bx - 28) > 1.1) {
+        const br = .27 + R() * .06, bc = V3(bx, SOIL + br * .95, mzc);
+        const nn = Math.round(70 * dens(bx));
+        for (let i = 0; i < nn; i++) {
+          const u = R() * 1.7 - .7, th = R() * Math.PI * 2, sxy = Math.sqrt(Math.max(0, 1 - u * u));
+          const nrm = V3(Math.cos(th) * sxy, u, Math.sin(th) * sxy);
+          pushFacing(bc.clone().addScaledVector(nrm, br * (.92 + R() * .08)), nrm, .17 + R() * .07, boxTint(), BOX, 0, .5);
         }
       }
-      x += .62 + R() * .25;
+      x = bx + .5;
     }
-    // grass edging along both curbs
-    const ng = Math.round((isLow ? 900 : 2600));
+    // 3) ornamental grass tufts in the gaps and along the hedge feet
+    const ng = Math.round((isLow ? 500 : 2200));
     for (let i = 0; i < ng; i++) {
-      const gx = (R() * 2 - 1) * ME; if (Math.abs(gx - 28) < .6) continue;
-      const gz = R() < .5 ? mz0 + .06 + R() * .14 : mz1 - .06 - R() * .14;
-      pushCard(gx, .12 + .1, gz, .32 + R() * .14, new THREE.Vector3(gx, -.4, gz), [.85 + R() * .2, .95 + R() * .2, .7, 0], 3, .2, true);
+      const gx = (R() * 2 - 1) * ME; if (Math.abs(gx - 28) < .7) continue;
+      const gz = mzc + (R() - .5) * (mw - .9);
+      const s = .22 + R() * .14;
+      pushCard(gx, SOIL + s * .45, gz, s, V3(gx, -.3, gz), [.75 + R() * .2, .8 + R() * .2, .65, 0], GRASS, .1, true, mcards);
     }
-    // tree pits: grass ground cover
-    for (const [tx, tz] of treePits) for (let i = 0; i < (isLow ? 6 : 16); i++) {
-      const gx = tx + (R() - .5) * 1.3, gz = tz + (R() - .5) * 1.3;
-      pushCard(gx, SIDEWALK_H + .02 + .08, gz, .26 + R() * .1, new THREE.Vector3(gx, -.4, gz), [.8, .9, .65, 0], 3, .25, true);
+    // tree pits: low grass ground cover
+    for (const [tx, tz] of treePits) for (let i = 0; i < (isLow ? 6 : 14); i++) {
+      const gx = tx + (R() - .5) * 1.3, gz = tz + (R() - .5) * 1.3, s = .22 + R() * .1;
+      pushCard(gx, SIDEWALK_H + .02 + s * .4, gz, s, V3(gx, -.4, gz), [.7, .78, .6, 0], GRASS, .2, true, mcards);
     }
   }
 
-  // build the instanced mesh
-  {
-    const n = cards.length;
+  // instanced card meshes
+  function cardMesh(list, material) {
+    const n = list.length;
     const geo = new THREE.PlaneGeometry(1, 1);
     const aCenter = new Float32Array(n * 3), aTint = new Float32Array(n * 4), aTile = new Float32Array(n), aDepth = new Float32Array(n);
-    const mesh = new THREE.InstancedMesh(geo, vegMat, n);
-    cards.forEach((c, i) => {
-      tmpE.set(c.rx, c.ry, c.rz); tmpQ.setFromEuler(tmpE);
+    const mesh = new THREE.InstancedMesh(geo, material, n);
+    list.forEach((c, i) => {
       tmpS.setScalar(c.s); tmpP.set(c.x, c.y, c.z);
-      tmpM.compose(tmpP, tmpQ, tmpS); mesh.setMatrixAt(i, tmpM);
+      tmpM.compose(tmpP, c.q, tmpS); mesh.setMatrixAt(i, tmpM);
       aCenter.set([c.c.x, c.c.y, c.c.z], i * 3); aTint.set(c.tint, i * 4); aTile[i] = c.tile; aDepth[i] = c.depth;
     });
     geo.setAttribute('aCenter', new THREE.InstancedBufferAttribute(aCenter, 3));
@@ -360,7 +412,13 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
     geo.setAttribute('aDepth', new THREE.InstancedBufferAttribute(aDepth, 1));
     mesh.frustumCulled = false;
     group.add(mesh);
+    return mesh;
   }
+  cardMesh(cards, vegMat);
+  // the planting uses the same shader with the photographic atlas, more ambient (it sits between the lamp rows)
+  const medianMat = vegMat.clone();
+  medianMat.uniforms = { ...vegU, tAtlas: { value: medianTex }, uAmb: { value: 7 }, uSway: { value: .35 }, uLampI: { value: 26 } };
+  cardMesh(mcards, medianMat);
 
   /* --- trunks --- */
   {
@@ -378,6 +436,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
         .replace('#include <worldpos_vertex>', '#include <worldpos_vertex>\nvWp = (modelMatrix * vec4(transformed,1.)).xyz;');
       sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying vec3 vWp;\n' + NOISE)
         .replace('#include <color_fragment>', `#include <color_fragment>
+          diffuseColor.rgb *= vec3(.62, .66, .7);
           float m = fbm(vWp.xz * 9.); float bark = smoothstep(.55, .75, fbm(vWp.xz * 26. + 3.));
           diffuseColor.rgb *= .6 + m * .7; diffuseColor.rgb = mix(diffuseColor.rgb, vec3(.33, .24, .16), bark * .6);
           float moss = smoothstep(.45, .7, fbm(vWp.xz * 2.3));
@@ -633,9 +692,35 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky }) {
     group.add(slab, rail);
   }
 
+  /* ---------- reveal: the aerial shots stay pure photo; the 3D city dissolves in on the descent ---------- */
+  const revealU = { value: 1 };
+  const DITHER_U = 'uniform float uReveal;';
+  const DITHER = 'if (uReveal < .999 && fract(52.9829189 * fract(dot(gl_FragCoord.xy, vec2(.06711056, .00583715)))) > uReveal) discard;';
+  const patched = new Set();
+  group.traverse(o => {
+    const m = o.material; if (!m || m === groundMat || patched.has(m)) return; patched.add(m);
+    if (m.isShaderMaterial) {
+      m.uniforms.uReveal = revealU;
+      m.fragmentShader = m.fragmentShader.replace('void main(){', `${DITHER_U}\nvoid main(){\n${DITHER}`);
+    } else {
+      const prev = m.onBeforeCompile;
+      m.onBeforeCompile = (sh, r) => {
+        prev.call(m, sh, r);
+        sh.uniforms.uReveal = revealU;
+        sh.fragmentShader = sh.fragmentShader.replace('void main() {', `${DITHER_U}\nvoid main() {\n${DITHER}`);
+      };
+      m.customProgramCacheKey = () => m.uuid;
+    }
+  });
+
   return {
     group,
     update(t) { timeU.value = t; },
+    setReveal(r) {
+      revealU.value = r;
+      group.visible = r > .001;
+      topMesh.visible = roofMesh.visible = r > .5;
+    },
     lampIntensity: lampI,
   };
 }

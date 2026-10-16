@@ -49,7 +49,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, isLow ? 1.25 : 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.05;
+  renderer.toneMappingExposure = 1.0;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0f17);
@@ -67,7 +67,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const hdrLoader = new HDRLoader(manager);
   const loadTex = (url, srgb = true) => new Promise((res, rej) => texLoader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, rej));
 
-  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl] = await Promise.all([
+  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex] = await Promise.all([
     loadTex('assets/img/aerial.webp'),
     loadTex('assets/img/aerial-lod1.webp'),
     loadTex('assets/tex/asphalt_diff.jpg'),
@@ -78,6 +78,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     loadTex('assets/3d/sedan-atlas.jpg'),
     loadTex('assets/3d/sedan-atlas-n.jpg', false),
     loadDriver(gltfLoader),
+    loadTex('assets/tex/median-veg.webp'),
   ]);
   draco.dispose();
   env.mapping = THREE.EquirectangularReflectionMapping;
@@ -96,7 +97,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const groundU = {
     tLod0: { value: aerial }, tLod1: { value: lod1 }, tDetail: { value: asph },
     uLod1: { value: 0 }, uDetail: { value: 0 }, uCars: { value: Array.from({ length: MAX_CARS }, () => new THREE.Vector4(9999, 0, 1, 0)) },
-    uCamPos: { value: new THREE.Vector3() }, uFogColor: { value: new THREE.Color(0x121b2a) }, uFogNear: { value: 70 }, uFogFar: { value: 260 },
+    uReveal: { value: 1 }, uCamPos: { value: new THREE.Vector3() }, uFogColor: { value: new THREE.Color(0x121b2a) }, uFogNear: { value: 70 }, uFogFar: { value: 260 },
   };
   const groundMat = new THREE.ShaderMaterial({
     uniforms: groundU,
@@ -104,7 +105,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       varying vec3 vW;
       void main(){ vec4 w = modelMatrix * vec4(position,1.); vW = w.xyz; gl_Position = projectionMatrix * viewMatrix * w; }`,
     fragmentShader: /* glsl */`
-      uniform sampler2D tLod0, tLod1, tDetail; uniform float uLod1, uDetail;
+      uniform sampler2D tLod0, tLod1, tDetail; uniform float uLod1, uDetail, uReveal;
       uniform vec4 uCars[${MAX_CARS}]; uniform vec3 uCamPos, uFogColor; uniform float uFogNear, uFogFar;
       varying vec3 vW;
       float lum(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
@@ -130,9 +131,9 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         // sidewalks: the photo's trees are replaced by 3D ones → turn their imprint into shaded paving, add slab joints
         float side = smoothstep(-22.6, -22.3, p.y) * (1. - smoothstep(-10.7, -10.45, p.y)) + smoothstep(8.95, 9.2, p.y) * (1. - smoothstep(21.1, 21.4, p.y));
         float gr = clamp((cb.g - max(cb.r, cb.b)) * 18. + .15, 0., 1.);
-        c = mix(c, vec3(lum(cb)) * vec3(.62, .6, .58) * mix(.9, 1.15, dl), side * gr * uDetail);
+        c = mix(c, vec3(lum(cb)) * vec3(.62, .6, .58) * mix(.9, 1.15, dl), side * gr * uDetail * uReveal);
         float jx = smoothstep(.46, .5, abs(fract(p.x / .9) - .5)), jz = smoothstep(.46, .5, abs(fract(p.y / .6 + .5 * step(.5, fract(p.x / 1.8))) - .5));
-        c *= 1. - side * uDetail * .22 * max(jx, jz);
+        c *= 1. - side * uDetail * uReveal * .22 * max(jx, jz);
         // headlights & tail-lights of moving cars (x, z, dirX, on)
         vec3 add = vec3(0.);
         for (int i = 0; i < ${MAX_CARS}; i++) {
@@ -206,7 +207,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
     gr.addColorStop(0, 'rgba(255,214,160,1)'); gr.addColorStop(.12, 'rgba(255,190,120,.55)'); gr.addColorStop(.4, 'rgba(255,170,100,.12)'); gr.addColorStop(1, 'rgba(255,160,90,0)');
     g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
-    const haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .55, fog: true });
+    var haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .55, fog: true });
     for (const h of lampHeads) { const sp = new THREE.Sprite(haloMat); sp.position.copy(h).add(V(0, .05, 0)); sp.scale.setScalar(2.6); scene.add(sp); }
   }
   // the avenue's lamps continue past the photo (visual only)
@@ -219,7 +220,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
 
   /* ---------- 3D city: sidewalks, planted median, trees, buildings ---------- */
   const SKY = { top: 0x2c3f63, ground: 0x2a221b };
-  const city = buildCity({ scene, groundMat, ROAD, GW, lamps: lampHeads, isLow, sky: SKY });
+  const city = buildCity({ scene, groundMat, ROAD, GW, lamps: lampHeads, isLow, sky: SKY, medianTex });
   // sky dome (only visible in the low, grazing shots)
   {
     const skyMat = new THREE.ShaderMaterial({
@@ -608,6 +609,9 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     traffic.forEach((c, i) => { if (i + 1 < MAX_CARS) cars[i + 1].set(c.group.position.x, c.def.lane, c.def.dir, 1); });
 
     city.update(clockT);
+    // aerial shots = the original photo; the 3D city fades in as the camera rushes down to the checkpoint
+    const reveal = ease(range(p, .462, .495));
+    city.setReveal(reveal); groundU.uReveal.value = reveal; haloMat.opacity = .55 * reveal;
     hero.driver.update(clockT);
     computeShot(p, clockT);
     if (window.__cam) { const c = window.__cam; shot.pos.set(...c.pos); shot.look.set(...c.look); shot.up.set(0, 1, 0); shot.fov = c.fov || 40; shot.roll = 0; }
