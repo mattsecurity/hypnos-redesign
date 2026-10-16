@@ -1,6 +1,6 @@
 // HYPNOS — "La sosta, chiavi in mano".
-// Scroll story: the parking meter seen from the front → the camera rises to a drone view of the street →
-// installation → road markings are painted → maintenance van → the managed street comes alive.
+// Scroll story: Fornitura (photo of the meter) → dissolve to the street from above → Installazione (a van
+// arrives and the technician mounts the meter) → Segnaletica (stalls painted) → Manutenzione → Gestione (live street).
 // Street: a real top-down photograph (assets/img/parking-street.webp); stalls, meter, cars and van are drawn on top.
 
 const W = 40, H = 40 * 1024 / 1536;          // world, metres (photo is 1536×1024 at 38.4 px/m)
@@ -36,17 +36,17 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   };
 
   // pin first (synchronously), so every ScrollTrigger below this section is measured with the pin spacer
-  let P = 0;
+  let P = 0, PT = 0;                 // P = smoothed progress the scene renders, PT = scroll target
   const mm = gsap.matchMedia();
   mm.add('(min-width: 961px)', () => {
-    const st = ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=300%', scrub: true, onUpdate: s => { P = s.progress * 1.02; } });
+    const st = ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=420%', scrub: true, onUpdate: s => { PT = s.progress * 1.02; } });
     return () => st.kill();
   });
   mm.add('(max-width: 960px)', () => {
     // no pin on small screens: the story plays by itself once the stage is in view
     let t0 = null;
     const st = ScrollTrigger.create({ trigger: '.pk-view', start: 'top 75%', onEnter: () => { t0 = performance.now(); } });
-    const tick = () => { if (t0 !== null) P = Math.min(1.02, (performance.now() - t0) / 16000); };
+    const tick = () => { if (t0 !== null) PT = Math.min(1.02, (performance.now() - t0) / 16000); };
     gsap.ticker.add(tick);
     return () => { st.kill(); gsap.ticker.remove(tick); };
   });
@@ -266,10 +266,10 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     }
     g.restore();
   }
-  function drawMeter(g, k, on, t) {
+  function drawMeter(g, k, on, t, sc = 1) {
     if (meterTop) {
       const mw = .78, mh = mw * meterTop.height / meterTop.width;
-      g.save(); g.translate(METER.x * k, METER.y * k);
+      g.save(); g.translate(METER.x * k, METER.y * k); g.scale(sc, sc);
       g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = .25 * k; g.shadowOffsetX = .35 * k; g.shadowOffsetY = .3 * k;
       g.drawImage(meterTop, -mw / 2 * k, -mh / 2 * k, mw * k, mh * k);
       g.restore();
@@ -341,59 +341,58 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
 
   function render(dt) {
     const g = ctx, k = S * dpr;
-    // ① front photo: slow push-in, then the lens dives onto the solar panel (match cut)
-    // ② the same panel seen from above; the drone climbs (exponential zoom-out) and settles its rotation
-    const push = range(P, 0, .1), dive = easeIO(range(P, .1, .2)), cut = ease(range(P, .175, .215));
-    const rise = easeIO(range(P, .2, .34));
-    const pInst = range(P, .34, .46), pPaint = range(P, .48, .63), pVan = range(P, .65, .8), live = P >= .8;
-    setPhase(P < .3 ? 0 : P < .47 ? 1 : P < .64 ? 2 : P < .8 ? 3 : 4);
+    // the scene never jumps with the wheel: it glides towards the scroll position
+    P += (PT - P) * Math.min(1, dt * 3.2);
+    if (Math.abs(PT - P) < 1e-4) P = PT;
+    // Fornitura = the photo only; then a plain dissolve to the street seen from above
+    const fade = ease(range(P, .14, .2));
+    const pInst = range(P, .22, .43), pPaint = range(P, .46, .62), pMaint = range(P, .65, .81), live = P >= .82;
+    setPhase(P < .2 ? 0 : P < .45 ? 1 : P < .64 ? 2 : P < .82 ? 3 : 4);
 
-    const PANEL = { x: .5, y: .293 };                // solar panel position in the front photo (fraction of the frame)
-    const DIVE = 1.9;                                  // photo zoom at the cut
-    const Z0 = 4.45 * DIVE * 1.06;                     // drone zoom that makes the two solar panels the same size
-    const z = Math.exp(lerp(Math.log(Z0), 0, rise));
-    const pvy = METER.y - .1 * (1 - rise);             // pivot on the panel (upper part of the meter), not its centre
-    const ax = lerp(W * PANEL.x, METER.x, rise), ay = lerp(H * PANEL.y, pvy, rise);
-    const rot = .12 * Math.sin(Math.PI * rise);       // a gentle yaw while climbing, level at both ends
     g.setTransform(1, 0, 0, 1, 0, 0);
-    g.fillStyle = '#5b5e62'; g.fillRect(0, 0, canvas.width, canvas.height);
-    g.setTransform(1, 0, 0, 1, ax * k, ay * k); g.rotate(rot); g.scale(z, z); g.translate(-METER.x * k, -pvy * k);
     if (street) g.drawImage(street, 0, 0, W * k, H * k);
-    const cb = Math.max(cut * (1 - cut) * 6, Math.sin(rise * Math.PI) * 1.2);
-    canvas.style.filter = cb > .05 ? `blur(${cb}px)` : '';
+    else { g.fillStyle = '#5b5e62'; g.fillRect(0, 0, canvas.width, canvas.height); }
 
     const f = ui.front;
-    f.style.transformOrigin = `${PANEL.x * 100}% ${PANEL.y * 100}%`;
-    f.style.transform = `scale(${(1 + push * .06) * Math.exp(dive * Math.log(DIVE))})`;
-    f.style.filter = `blur(${cut * 4}px)`;
-    f.style.opacity = String(1 - cut);
-    f.style.visibility = cut >= .999 ? 'hidden' : 'visible';
-    if (!f._cap) f._cap = f.querySelector('.pk-front__cap');
-    f._cap.style.opacity = String(1 - range(P, .09, .13));
+    f.style.opacity = String(1 - fade);
+    f.style.visibility = fade >= .999 ? 'hidden' : 'visible';
 
     drawStalls(g, k, pPaint);
-    ui.install.style.opacity = String(pInst > 0 && pInst < 1 ? 1 : 0);
-    ui.install.querySelector('i').style.transform = `scaleX(${pInst})`;
+    // installation progress while the technician mounts the meter
+    const mount = range(pInst, .38, .62);
+    ui.install.style.opacity = String(mount > 0 && mount < 1 ? 1 : 0);
+    ui.install.querySelector('i').style.transform = `scaleX(${mount})`;
     ui.hud.classList.toggle('on', live);
 
     step(dt, live);
     for (const c of cars) if (live || c.state === 'through') drawCar(g, c, k);
 
-    // maintenance van: arrives on lane A, stops by the meter with the beacon on, then leaves
-    if (pVan > 0 && pVan < 1) {
-      const a = easeOut(range(pVan, 0, .35)), b = easeIO(range(pVan, .7, 1));
+    // service visits: the van arrives on lane A, stops by the meter with the beacon on, the technician
+    // walks to the kerb and back, the van leaves — once to install the meter, once for maintenance
+    const visit = t => {
+      const a = easeOut(range(t, 0, .3)), b = easeIO(range(t, .76, 1));
       const vx = lerp(lerp(-5, METER.x - .5, a), W + 7, b);
-      drawVan(g, vx, LANE_A, k, pVan > .3 && pVan < .75 && (sim % .7) < .38);
-      if (pVan > .36 && pVan < .7) {
-        // technician at the meter
-        const tw = ease(range(pVan, .36, .45)) * (1 - ease(range(pVan, .6, .7)));
-        const tx = METER.x + .7, ty = lerp(LANE_A - 1.6, METER.y + .45, tw);
+      drawVan(g, vx, LANE_A, k, t > .28 && t < .78 && (sim % .7) < .38);
+      if (t > .3 && t < .74) {
+        const tw = ease(range(t, .3, .4)) * (1 - ease(range(t, .64, .74)));
+        const tx = METER.x + .75, ty = lerp(LANE_A - 1.6, METER.y + .5, tw);
         g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse((tx + .12) * k, (ty + .12) * k, .3 * k, .22 * k, 0, 0, 7); g.fill();
         g.fillStyle = '#f2a516'; g.beginPath(); g.ellipse(tx * k, ty * k, .3 * k, .22 * k, 0, 0, 7); g.fill();
         g.fillStyle = '#2b2f36'; g.beginPath(); g.arc(tx * k, ty * k, .12 * k, 0, 7); g.fill();
       }
+    };
+    if (pInst > 0 && pInst < 1) visit(pInst);
+    if (pMaint > 0 && pMaint < 1) visit(pMaint);
+
+    // the meter appears when the technician has mounted it
+    const appear = P >= .43 ? 1 : easeOut(range(pInst, .5, .62));
+    if (appear > 0) {
+      drawMeter(g, k, appear >= 1, sim, .6 + .4 * appear);
+      if (appear < 1) {
+        g.strokeStyle = `rgba(226,88,97,${.8 * (1 - appear)})`; g.lineWidth = .08 * k;
+        g.beginPath(); g.arc(METER.x * k, METER.y * k, (.4 + appear * 1.4) * k, 0, 7); g.stroke();
+      }
     }
-    drawMeter(g, k, P > .34, sim);
   }
 
   /* ---------- loop ---------- */
@@ -409,5 +408,5 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   resize(); hud(); setPhase(0); render(0);
   addEventListener('resize', () => { resize(); render(0); });
   ScrollTrigger.create({ trigger: root, start: 'top bottom', end: 'bottom top', onToggle: s => (s.isActive ? start() : stop()) });
-  if (reduced) P = 1.02;
+  if (reduced) P = PT = 1.02;
 }
