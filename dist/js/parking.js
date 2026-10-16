@@ -51,10 +51,14 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     return () => { st.kill(); gsap.ticker.remove(tick); };
   });
 
-  const [street, van, ...carImgs] = await Promise.all([
-    loadImg('assets/img/parking-street.webp'), loadImg('assets/img/van-top.webp'),
-    ...[1, 2, 3, 4, 5, 6].map(i => loadImg(`assets/img/cars/car-${i}.webp`)),
+  const CAR_MODELS = 18;
+  const [street, van, meterTop, ...carLoad] = await Promise.all([
+    loadImg('assets/img/parking-street.webp'), loadImg('assets/img/van-top.webp'), loadImg('assets/img/meter-top.webp'),
+    ...Array.from({ length: CAR_MODELS }, (_, i) => loadImg(`assets/img/cars/car-${i + 1}.webp`)),
   ]);
+  // real-world lengths per model (m), so a city car stays shorter than an SUV
+  const CAR_LEN = [4.0, 4.5, 4.3, 4.5, 4.1, 4.4, 3.5, 4.1, 4.2, 4.3, 4.3, 3.95, 3.85, 4.6, 4.4, 4.5, 4.55, 3.8];
+  const carImgs = carLoad.map((img, i) => img && { img, len: CAR_LEN[i] || 4.2 }).filter(Boolean);
 
   /* ---------- sizing ---------- */
   let S = 20, dpr = 1;
@@ -79,8 +83,9 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   /* ---------- actors ---------- */
   const cars = [];
   let sim = 0, revenue = 0, lastA = -9, lastB = -9, populated = false;
-  const pick = () => carImgs[(Math.random() * carImgs.length) | 0];
-  function mk(o) { const img = pick(); return Object.assign({ img, len: 4.05 + Math.random() * .3, x: 0, y: 0, h: 0, v: 0, t: 0, brake: 0, rev: 0 }, o); }
+  let bag = [];
+  const pick = () => { if (!bag.length) bag = carImgs.slice().sort(() => Math.random() - .5); return bag.pop(); };
+  function mk(o) { const m = pick(); return Object.assign({ img: m.img, len: m.len * (.98 + Math.random() * .04), x: 0, y: 0, h: 0, v: 0, t: 0, brake: 0, rev: 0 }, o); }
 
   function toast(html) {
     const el = document.createElement('div'); el.className = 'pk-toast'; el.innerHTML = html;
@@ -262,6 +267,19 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     g.restore();
   }
   function drawMeter(g, k, on, t) {
+    if (meterTop) {
+      const mw = .78, mh = mw * meterTop.height / meterTop.width;
+      g.save(); g.translate(METER.x * k, METER.y * k);
+      g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = .25 * k; g.shadowOffsetX = .35 * k; g.shadowOffsetY = .3 * k;
+      g.drawImage(meterTop, -mw / 2 * k, -mh / 2 * k, mw * k, mh * k);
+      g.restore();
+      if (on) {
+        const ph = (t % 1.8) / 1.8;
+        g.strokeStyle = `rgba(226,88,97,${(1 - ph) * .85})`; g.lineWidth = .07 * k;
+        g.beginPath(); g.arc(METER.x * k, METER.y * k, (.5 + ph * 1.6) * k, 0, 7); g.stroke();
+      }
+      return;
+    }
     g.save(); g.translate(METER.x * k, METER.y * k);
     g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = .25 * k; g.shadowOffsetX = .35 * k; g.shadowOffsetY = .3 * k;
     g.fillStyle = '#25292f'; roundRect(g, -.3 * k, -.2 * k, .6 * k, .4 * k, .06 * k); g.fill();
@@ -323,24 +341,35 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
 
   function render(dt) {
     const g = ctx, k = S * dpr;
-    const rise = easeIO(range(P, .1, .27));            // front photo → drone
-    const pInst = range(P, .28, .42), pPaint = range(P, .44, .6), pVan = range(P, .62, .8), live = P >= .8;
-    setPhase(P < .27 ? 0 : P < .43 ? 1 : P < .61 ? 2 : P < .8 ? 3 : 4);
+    // ① front photo: slow push-in, then the lens dives onto the solar panel (match cut)
+    // ② the same panel seen from above; the drone climbs (exponential zoom-out) and settles its rotation
+    const push = range(P, 0, .1), dive = easeIO(range(P, .1, .2)), cut = ease(range(P, .175, .215));
+    const rise = easeIO(range(P, .2, .34));
+    const pInst = range(P, .34, .46), pPaint = range(P, .48, .63), pVan = range(P, .65, .8), live = P >= .8;
+    setPhase(P < .3 ? 0 : P < .47 ? 1 : P < .64 ? 2 : P < .8 ? 3 : 4);
 
-    // camera: starts low over the meter and climbs to the full street
-    const z = lerp(3.4, 1, rise);
-    const ax = lerp(W / 2, METER.x, rise), ay = lerp(H * .62, METER.y, rise);
+    const PANEL = { x: .5, y: .293 };                // solar panel position in the front photo (fraction of the frame)
+    const DIVE = 1.9;                                  // photo zoom at the cut
+    const Z0 = 4.45 * DIVE * 1.06;                     // drone zoom that makes the two solar panels the same size
+    const z = Math.exp(lerp(Math.log(Z0), 0, rise));
+    const pvy = METER.y - .1 * (1 - rise);             // pivot on the panel (upper part of the meter), not its centre
+    const ax = lerp(W * PANEL.x, METER.x, rise), ay = lerp(H * PANEL.y, pvy, rise);
+    const rot = .12 * Math.sin(Math.PI * rise);       // a gentle yaw while climbing, level at both ends
     g.setTransform(1, 0, 0, 1, 0, 0);
     g.fillStyle = '#5b5e62'; g.fillRect(0, 0, canvas.width, canvas.height);
-    g.setTransform(z, 0, 0, z, (ax - METER.x * z) * k, (ay - METER.y * z) * k);
+    g.setTransform(1, 0, 0, 1, ax * k, ay * k); g.rotate(rot); g.scale(z, z); g.translate(-METER.x * k, -pvy * k);
     if (street) g.drawImage(street, 0, 0, W * k, H * k);
-    canvas.style.filter = rise < 1 ? `blur(${(1 - rise) * 3}px)` : '';
+    const cb = Math.max(cut * (1 - cut) * 6, Math.sin(rise * Math.PI) * 1.2);
+    canvas.style.filter = cb > .05 ? `blur(${cb}px)` : '';
 
-    // front photo of the meter flies up and away as the camera rises
     const f = ui.front;
-    f.style.opacity = String(1 - ease(range(rise, .35, .85)));
-    f.style.transform = `perspective(1100px) translateY(${-rise * 18}%) rotateX(${rise * 38}deg) scale(${1 + rise * .55})`;
-    f.style.visibility = rise >= .999 ? 'hidden' : 'visible';
+    f.style.transformOrigin = `${PANEL.x * 100}% ${PANEL.y * 100}%`;
+    f.style.transform = `scale(${(1 + push * .06) * Math.exp(dive * Math.log(DIVE))})`;
+    f.style.filter = `blur(${cut * 4}px)`;
+    f.style.opacity = String(1 - cut);
+    f.style.visibility = cut >= .999 ? 'hidden' : 'visible';
+    if (!f._cap) f._cap = f.querySelector('.pk-front__cap');
+    f._cap.style.opacity = String(1 - range(P, .09, .13));
 
     drawStalls(g, k, pPaint);
     ui.install.style.opacity = String(pInst > 0 && pInst < 1 ? 1 : 0);
@@ -364,7 +393,7 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
         g.fillStyle = '#2b2f36'; g.beginPath(); g.arc(tx * k, ty * k, .12 * k, 0, 7); g.fill();
       }
     }
-    drawMeter(g, k, rise > .5 && P > .28, sim);
+    drawMeter(g, k, P > .34, sim);
   }
 
   /* ---------- loop ---------- */
