@@ -313,12 +313,12 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
   const boxTint = () => { const k = .8 + R() * .35; return [k * (.92 + R() * .1), k, k * (.9 + R() * .1), 0]; };
   {
     // 1) clipped hedges: superellipse cross-section (squarish, softly rounded), cards facing out of the surface
-    const hw = .17, hh = .36;
-    for (const zc of [mz0 + .2, mz1 - .2]) {
+    const hw = .23, hh = .38;
+    for (const zc of [mz0 + .25, mz1 - .25]) {
       let x = -ME;
       while (x < ME) {
         const segLen = 7 + R() * 5, x1 = Math.min(ME, x + segLen);
-        const per = Math.round(46 * dens(x));
+        const per = Math.round(60 * dens(x));
         const n = Math.round((x1 - x) * per);
         for (let i = 0; i < n; i++) {
           const px = x + .08 + R() * (x1 - x - .16);
@@ -346,11 +346,11 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
     while (x < ME) {
       const groupLen = 3.5 + R() * 3.5, kind = R() < .55 ? PINK : WHITE;
       const x1 = Math.min(ME, x + groupLen);
-      for (let rx = x + .5; rx < x1 - .3; rx += .7 + R() * .25) {
+      for (let rx = x + .45; rx < x1 - .3; rx += .55 + R() * .2) {
         if (Math.abs(rx - 28) < 1.1) continue;                       // clearance around the ANPR pole footing
-        const rz = mzc + (R() - .5) * .3, r = .33 + R() * .12, h = .48 + R() * .2;
+        const rz = mzc + (R() - .5) * .22, r = .38 + R() * .12, h = .5 + R() * .2;
         const cen = V3(rx, SOIL, rz);
-        const nn = Math.round(46 * dens(rx));
+        const nn = Math.round(56 * dens(rx));
         for (let i = 0; i < nn; i++) {
           const u = Math.pow(R(), .8), th = R() * Math.PI * 2;      // biased to the upper dome
           const sxy = Math.sqrt(1 - u * u);
@@ -380,7 +380,14 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
       }
       x = bx + .5;
     }
-    // 3) ornamental grass tufts in the gaps and along the hedge feet
+    // 3) low ground cover (creeping boxwood / ivy) so the mulch only shows in small patches
+    for (let i = 0, n = Math.round(ME * 2 * 22 * (isLow ? .5 : 1)); i < n; i++) {
+      const gx = (R() * 2 - 1) * ME; if (Math.abs(gx - 28) < .55) continue;
+      const gz = mzc + (R() - .5) * (mw - .5);
+      const k = .5 + R() * .3;
+      pushFacing(V3(gx, SOIL + .03 + R() * .06, gz), V3(0, 1, 0), .22 + R() * .1, [k * .8, k, k * .75, 0], BOX, .4, 1.1);
+    }
+    // 4) ornamental grass tufts in the gaps and along the hedge feet
     const ng = Math.round((isLow ? 500 : 2200));
     for (let i = 0; i < ng; i++) {
       const gx = (R() * 2 - 1) * ME; if (Math.abs(gx - 28) < .7) continue;
@@ -417,7 +424,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
   cardMesh(cards, vegMat);
   // the planting uses the same shader with the photographic atlas, more ambient (it sits between the lamp rows)
   const medianMat = vegMat.clone();
-  medianMat.uniforms = { ...vegU, tAtlas: { value: medianTex }, uAmb: { value: 7 }, uSway: { value: .35 }, uLampI: { value: 26 } };
+  medianMat.uniforms = { ...vegU, tAtlas: { value: medianTex }, uAmb: { value: 9 }, uSway: { value: .35 }, uLampI: { value: 30 } };
   cardMesh(mcards, medianMat);
 
   /* --- trunks --- */

@@ -109,6 +109,18 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       uniform vec4 uCars[${MAX_CARS}]; uniform vec3 uCamPos, uFogColor; uniform float uFogNear, uFogFar;
       varying vec3 vW;
       float lum(vec3 c){ return dot(c, vec3(.2126,.7152,.0722)); }
+      float h12(vec2 p){ vec3 p3 = fract(vec3(p.xyx) * .1031); p3 += dot(p3, p3.yzx + 33.33); return fract((p3.x + p3.y) * p3.z); }
+      float vn(vec2 p){ vec2 i = floor(p), f = fract(p); f = f*f*(3.-2.*f);
+        return mix(mix(h12(i), h12(i+vec2(1,0)), f.x), mix(h12(i+vec2(0,1)), h12(i+vec2(1,1)), f.x), f.y); }
+      float fbm2(vec2 p){ return vn(p) * .55 + vn(p * 2.07 + 3.1) * .3 + vn(p * 4.3 + 7.7) * .15; }
+      // thin, pixel-crisp dark line along a noise iso-contour (cracks / sealed joints)
+      float isoLine(float n, float w){ return 1. - smoothstep(0., fwidth(n) * w, abs(n - .5)); }
+      // heavily blurred photo (both LODs) at a world position
+      vec3 blurAt(vec2 q, float w1){
+        vec2 u0 = vec2((q.x + ${(GW / 2).toFixed(3)}) / ${GW.toFixed(3)}, 1. - (q.y + ${(GH / 2).toFixed(3)}) / ${GH.toFixed(3)});
+        vec2 u1 = vec2((q.x - ${L1.x0.toFixed(3)}) / ${(L1.x1 - L1.x0).toFixed(3)}, 1. - (q.y - ${L1.z0.toFixed(3)}) / ${(L1.z1 - L1.z0).toFixed(3)});
+        return mix(texture2D(tLod0, u0, 2.5).rgb, texture2D(tLod1, u1, 4.).rgb, w1);
+      }
       void main(){
         vec2 p = vW.xz;
         vec2 uv0 = vec2((p.x + ${(GW / 2).toFixed(3)}) / ${GW.toFixed(3)}, 1. - (p.y + ${(GH / 2).toFixed(3)}) / ${GH.toFixed(3)});
@@ -120,16 +132,46 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         c = mix(c, texture2D(tLod1, uv1).rgb, w1);
         cb = mix(cb, texture2D(tLod1, uv1, 4.).rgb, w1);
         // asphalt micro detail only on carriageways
-        float road = (smoothstep(${ROAD.north[0].toFixed(2)}, ${(ROAD.north[0] + .3).toFixed(2)}, p.y) * (1. - smoothstep(${(ROAD.north[1] - .2).toFixed(2)}, ${ROAD.north[1].toFixed(2)}, p.y)))
-                   + (smoothstep(${ROAD.south[0].toFixed(2)}, ${(ROAD.south[0] + .2).toFixed(2)}, p.y) * (1. - smoothstep(${(ROAD.south[1] - .3).toFixed(2)}, ${ROAD.south[1].toFixed(2)}, p.y)));
-        // close up: photo markings are replaced by crisp geometry → use a de-marked (blurred) photo on asphalt
-        c = mix(c, cb, road * uDetail);
+        // (the kerb-side edges extend under the 3D kerbs so no strip of the photo's planting peeks out)
+        float road = (smoothstep(${ROAD.north[0].toFixed(2)}, ${(ROAD.north[0] + .3).toFixed(2)}, p.y) * (1. - smoothstep(-2.05, -1.95, p.y)))
+                   + (smoothstep(.35, .45, p.y) * (1. - smoothstep(${(ROAD.south[1] - .3).toFixed(2)}, ${ROAD.south[1].toFixed(2)}, p.y)));
+        // close up: photo markings are replaced by crisp geometry → de-marked photo on asphalt.
+        // Markings are thin bright lines along x: the darkest of three samples across the lane removes their blurred halo.
+        // clamp into the carriageway core first, so the kerb-side strips reuse nearby asphalt
+        float py = p.y < -1. ? clamp(p.y, ${(ROAD.north[0] + .3).toFixed(2)}, ${(ROAD.north[1] - .3).toFixed(2)}) : clamp(p.y, ${(ROAD.south[0] + .3).toFixed(2)}, ${(ROAD.south[1] - .3).toFixed(2)});
+        vec3 cm = blurAt(vec2(p.x, py), w1);
+        vec3 c0 = cm;
+        for (int k = 0; k < 4; k++) {
+          float dz = (k < 2 ? .75 : 1.5) * (mod(float(k), 2.) < .5 ? 1. : -1.);
+          float qz = py + dz;
+          // only samples that are still on the same carriageway (never pull in the median / kerb colours)
+          float inN = step(${(ROAD.north[0] + .25).toFixed(2)}, qz) * step(qz, ${(ROAD.north[1] - .25).toFixed(2)}) * step(py, -1.);
+          float inS = step(${(ROAD.south[0] + .25).toFixed(2)}, qz) * step(qz, ${(ROAD.south[1] - .25).toFixed(2)}) * step(-1., py);
+          vec3 sm = blurAt(vec2(p.x, qz), w1) * (k < 2 ? 1. : 1.04);
+          cm = min(cm, mix(c0, sm, max(inN, inS)));
+        }
+        c = mix(c, cm, road * uDetail);
         vec3 d = texture2D(tDetail, p / 3.2).rgb;
         vec3 d2 = texture2D(tDetail, p / 11.0 + .37).rgb;
-        float dl = lum(d) / .19 * .75 + lum(d2) / .19 * .25;
-        c *= mix(1., clamp(dl, .45, 1.8), uDetail * mix(.25, .9, road));
-        // sidewalks: the photo's trees are replaced by 3D ones → turn their imprint into shaded paving, add slab joints
+        vec3 d3 = texture2D(tDetail, p / 1.15 + .61).rgb;
+        float dl = lum(d) / .19 * .6 + lum(d2) / .19 * .2 + lum(d3) / .19 * .2;
         float side = smoothstep(-22.6, -22.3, p.y) * (1. - smoothstep(-10.7, -10.45, p.y)) + smoothstep(8.95, 9.2, p.y) * (1. - smoothstep(21.1, 21.4, p.y));
+        // crisp aggregate: full-strength asphalt on the carriageways, a stone grain on the pavements
+        c *= mix(1., clamp(dl, .4, 1.9), uDetail * (road * .95 + side * .55 * uReveal + (1. - road - side) * .3));
+        // fine wear: tyre polish along the wheel tracks, darker oil-stained lane centres
+        float lanePos = fract((p.y - ${ROAD.south[0].toFixed(2)}) / 3.9);
+        float tracks = smoothstep(.12, .0, abs(lanePos - .27)) + smoothstep(.12, .0, abs(lanePos - .73));
+        c *= 1. + road * uDetail * (tracks * .06 - smoothstep(.1, .0, abs(lanePos - .5)) * .07);
+        // crisp features that a real drone frame resolves: hairline cracks, tar-sealed seams, repair patches
+        float crackMask = smoothstep(.62, .8, vn(p * .23 + 11.));
+        float crack = isoLine(fbm2(p * vec2(.9, 2.2)), 1.4) * crackMask;
+        float seam = isoLine(fract((p.y + .35 * sin(p.x * .07)) / 4.2) * .999 + .001 * vn(p * 3.), 1.6) * .6;
+        vec2 pc = floor(p / vec2(5.5, 2.2)); float patchOn = step(.93, h12(pc + 4.));
+        vec2 pf = fract(p / vec2(5.5, 2.2));
+        float repair = patchOn * step(.15, pf.x) * step(pf.x, .8) * step(.2, pf.y) * step(pf.y, .85);
+        c *= 1. - road * uDetail * (crack * .28 + seam * .22);
+        c = mix(c, c * vec3(.78, .8, .84), road * uDetail * repair);
+        // sidewalks: the photo's trees are replaced by 3D ones → turn their imprint into shaded paving, add slab joints
         float gr = clamp((cb.g - max(cb.r, cb.b)) * 18. + .15, 0., 1.);
         c = mix(c, vec3(lum(cb)) * vec3(.62, .6, .58) * mix(.9, 1.15, dl), side * gr * uDetail * uReveal);
         float jx = smoothstep(.46, .5, abs(fract(p.x / .9) - .5)), jz = smoothstep(.46, .5, abs(fract(p.y / .6 + .5 * step(.5, fract(p.x / 1.8))) - .5));
@@ -147,7 +189,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
           float spots = step(0., along) * exp(-pow(a - 4.5, 2.) / 6.) * (exp(-pow(lat - .7, 2.) * 2.) + exp(-pow(lat + .7, 2.) * 2.));
           float back = -rel.x * s - 2.45;
           float tail = exp(-clamp(back, 0., 80.) / 1.2) * step(0., back) * exp(-lat * lat / .9);
-          add += car.w * (vec3(1., .93, .82) * (beam * .55 + spots * .35) + vec3(.9, .05, .03) * tail * .25);
+          add += car.w * (vec3(1., .93, .82) * (beam * .45 + spots * .3) + vec3(.9, .05, .03) * tail * .25);
         }
         c += add * (.35 + .65 * clamp(dl, 0., 1.4));
         float f = smoothstep(uFogNear, uFogFar, distance(uCamPos, vW));
@@ -164,7 +206,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   surround.rotation.x = -Math.PI / 2; surround.position.y = -0.05; scene.add(surround);
 
   /* ---------- road furniture: curbs, crisp markings ---------- */
-  const concrete = new THREE.MeshStandardMaterial({ color: 0x8a8d90, roughness: .85 });
+  const concrete = new THREE.MeshStandardMaterial({ color: 0x9a948a, roughness: .85 });
   for (const z of [ROAD.medianZ0 + .1, ROAD.medianZ1 - .1]) {
     const curb = new THREE.Mesh(new THREE.BoxGeometry(CITY.extent * 2, .14, .2), concrete);
     curb.position.set(0, .07, z); scene.add(curb);
@@ -427,7 +469,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const bokeh = new BokehPass(scene, camera, { focus: 5, aperture: .0004, maxblur: .016 });
   bokeh.enabled = false;
   composer.addPass(bokeh);
-  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .55, .5, .92);
+  const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .45, .45, 1.35);
   composer.addPass(bloom);
   const grade = new ShaderPass({
     uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFeed: { value: 0 }, uFlash: { value: 0 }, uVig: { value: .9 }, uRes: { value: new THREE.Vector2(1, 1) }, uVel: { value: new THREE.Vector2() } },
@@ -609,11 +651,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     traffic.forEach((c, i) => { if (i + 1 < MAX_CARS) cars[i + 1].set(c.group.position.x, c.def.lane, c.def.dir, 1); });
 
     city.update(clockT);
-    // aerial shots = the original photo; the 3D city fades in as the camera rushes down to the checkpoint
-    const reveal = ease(range(p, .462, .495));
-    city.setReveal(reveal); groundU.uReveal.value = reveal; haloMat.opacity = .55 * reveal;
     hero.driver.update(clockT);
     computeShot(p, clockT);
+    // high aerial shots = the original photo; below ~70 m the 3D city (trees, planted median, lamps…) dissolves in,
+    // so the close shots stay crisp instead of showing a magnified photo
+    const reveal = Math.max(ease(range(p, .462, .495)), ease(clamp((70 - shot.pos.y) / 28)));
+    city.setReveal(reveal); groundU.uReveal.value = reveal; haloMat.opacity = .55 * reveal;
     if (window.__cam) { const c = window.__cam; shot.pos.set(...c.pos); shot.look.set(...c.look); shot.up.set(0, 1, 0); shot.fov = c.fov || 40; shot.roll = 0; }
     updateLampPool(tmpB.copy(shot.look).lerp(hero.group.position, .5));
     camera.position.copy(shot.pos);
@@ -628,7 +671,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     // LOD + detail by altitude
     const alt = camera.position.y;
     groundU.uLod1.value = 1 - ease(clamp((alt - 55) / 60));
-    groundU.uDetail.value = 1 - ease(clamp((alt - 6) / 40));
+    groundU.uDetail.value = 1 - ease(clamp((alt - 12) / 80));
     groundU.uCamPos.value.copy(camera.position);
     const fogFar = p < .46 ? 2000 : lerp(2000, 150, ease(range(p, .46, .56)));
     groundU.uFogNear.value = fogFar * .35; groundU.uFogFar.value = fogFar;
@@ -650,15 +693,15 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     {
       proj.copy(shot.look).applyMatrix4(prevVP);
       const cur = tmpA.copy(shot.look).project(camera);
-      const k = dt > 0 ? (1 / 60) / Math.max(dt, 1 / 240) * .5 : 0;
+      const k = dt > 0 ? (1 / 60) / Math.max(dt, 1 / 240) * .3 : 0;
       const vx = (cur.x - proj.x) * .5 * k, vy = (cur.y - proj.y) * .5 * k;
-      const vlen = Math.hypot(vx, vy), cap = .035;
+      const vlen = Math.hypot(vx, vy), cap = .02;
       grade.uniforms.uVel.value.set(vx, vy).multiplyScalar(vlen > cap ? cap / vlen : 1).multiplyScalar(p > .64 ? 0 : 1);
       prevVP.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
     }
     const flash = Math.max(0, 1 - Math.abs(p - .641) / .005);
     grade.uniforms.uFlash.value = ease(flash) * .9;
-    bloom.strength = lerp(.55, .8, feed);
+    bloom.strength = lerp(.45, .8, feed); bloom.threshold = lerp(1.35, .92, feed);
 
     // HUD data
     hudState.p = p;
