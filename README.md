@@ -25,6 +25,9 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 
 - Terreno: foto aerea zenitale generata (`assets/img/aerial.webp`) + un secondo livello di dettaglio (`aerial-lod1.webp`) generato a partire dal ritaglio centrale e allineato in colore. Lo shader del terreno fonde i due livelli in base alla quota, aggiunge micro-dettaglio d'asfalto reale (Poly Haven) e calcola in modo analitico i coni dei fari e le luci posteriori.
 - Segnaletica, cordoli, lampioni e palo sono geometria 3D allineata alle misure della foto.
+- **Città 3D** (`js/city.js`), allineata alla foto e prolungata oltre i suoi bordi: marciapiedi rialzati con cordoli in granito, aiuola spartitraffico con terra, siepi di bosso, rose (rosa, bianche, rosse) ed erba; filari di platani con aiuole quadrate alla base; palazzi del primo fronte con facciate milanesi procedurali (finestre accese, persiane, vetrine, portoni, cornicioni, balconi in ferro battuto) e tetti presi dalla foto aerea. La vegetazione è un unico sistema di card istanziate (alpha-to-coverage, vento, illuminazione dei lampioni con traslucenza).
+- **Guidatore** (`js/driver.js`): avatar umano con scheletro, rivestito in abito scuro e camicia bianca (texture ricolorate), capelli corti aggiunti come guscio skinnato, seduto e messo in posa con IK analitica (mani sul volante, piedi sui pedali), micro-movimenti della testa.
+- **Camera**: movimento da drone con rumore organico, leggero rollio in virata, micro-oscillazione del palo nel feed; motion blur sui movimenti rapidi; aloni dei lampioni; cielo dell'ora blu nelle inquadrature radenti.
 - Post-produzione: bloom, profondità di campo vicino alla telecamera, grading con grana/vignettatura, modalità "feed" (distorsione, aberrazione, linee).
 - Fallback a immagine statica se WebGL2 non è disponibile; qualità ridotta su mobile.
 
@@ -34,8 +37,9 @@ Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Auto viste dall'alt
 
 ## Asset di terze parti
 
-- Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Guidatore in abito scuro costruito proceduralmente in `story.js`. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
+- Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
 - Poly Haven (CC0): modello `security_camera_01`, HDRI `rooftop_night`, texture `asphalt_04`.
+- Guidatore: avatar Ready Player Me dagli esempi di three.js (`examples/models/gltf/readyplayer.me.glb`), alleggerito con glTF-Transform (rimossi cappello, baffi, denti e morph target) → `assets/3d/driver.glb`.
 - Three.js (MIT), GSAP + ScrollTrigger, Lenis.
 - Font: Inter, Inter Tight, JetBrains Mono (Google Fonts).
 

@@ -254,6 +254,7 @@ async function initStory() {
     if (!window.WebGL2RenderingContext) throw new Error('WebGL2 non disponibile');
     story = await createStory({ canvas, onProgress: p => setLoad(.08 + p * .92), quality: (isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high' });
     story.onFrame(onStoryFrame);
+    window.__story = story;
     drawPlateCrop(story.plateCanvas);
     const { p } = storyProgress(); story.jump(p);
     story.renderOnce();

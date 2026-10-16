@@ -11,6 +11,8 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 import { BokehPass } from 'three/addons/postprocessing/BokehPass.js';
 import { ShaderPass } from 'three/addons/postprocessing/ShaderPass.js';
 import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
+import { buildCity, CITY } from './city.js';
+import { loadDriver, seatDriver } from './driver.js';
 
 /* ------------------------------------------------------------------ */
 /*  World constants (metres). Aerial photo: 1536×1024 px @ 0.135 m/px  */
@@ -38,6 +40,8 @@ const ease = t => t * t * (3 - 2 * t);
 const easeIO = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const V = (x, y, z) => new THREE.Vector3(x, y, z);
+// smooth band-limited noise (sum of incommensurate sines) — drone hover, gimbal drift, pole sway
+const wob = (t, s = 0) => Math.sin(t + s * 1.7) * .5 + Math.sin(t * 2.31 + s * 3.1) * .3 + Math.sin(t * 4.77 + s * 5.3) * .2;
 
 export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const isLow = quality === 'low';
@@ -45,11 +49,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, isLow ? 1.25 : 1.75));
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   renderer.toneMapping = THREE.NeutralToneMapping;
-  renderer.toneMappingExposure = 1.0;
+  renderer.toneMappingExposure = 1.05;
 
   const scene = new THREE.Scene();
   scene.background = new THREE.Color(0x0a0f17);
-  scene.fog = new THREE.Fog(0x101826, 70, 260);
+  const FOG = 0x121b2a;
+  scene.fog = new THREE.Fog(FOG, 70, 260);
 
   const camera = new THREE.PerspectiveCamera(35, 1, 0.1, 1200);
 
@@ -62,7 +67,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const hdrLoader = new HDRLoader(manager);
   const loadTex = (url, srgb = true) => new Promise((res, rej) => texLoader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, rej));
 
-  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN] = await Promise.all([
+  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl] = await Promise.all([
     loadTex('assets/img/aerial.webp'),
     loadTex('assets/img/aerial-lod1.webp'),
     loadTex('assets/tex/asphalt_diff.jpg'),
@@ -72,6 +77,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     loadTex('assets/3d/car-shadow.png'),
     loadTex('assets/3d/sedan-atlas.jpg'),
     loadTex('assets/3d/sedan-atlas-n.jpg', false),
+    loadDriver(gltfLoader),
   ]);
   draco.dispose();
   env.mapping = THREE.EquirectangularReflectionMapping;
@@ -90,7 +96,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const groundU = {
     tLod0: { value: aerial }, tLod1: { value: lod1 }, tDetail: { value: asph },
     uLod1: { value: 0 }, uDetail: { value: 0 }, uCars: { value: Array.from({ length: MAX_CARS }, () => new THREE.Vector4(9999, 0, 1, 0)) },
-    uCamPos: { value: new THREE.Vector3() }, uFogColor: { value: new THREE.Color(0x101826) }, uFogNear: { value: 70 }, uFogFar: { value: 260 },
+    uCamPos: { value: new THREE.Vector3() }, uFogColor: { value: new THREE.Color(0x121b2a) }, uFogNear: { value: 70 }, uFogFar: { value: 260 },
   };
   const groundMat = new THREE.ShaderMaterial({
     uniforms: groundU,
@@ -121,6 +127,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         vec3 d2 = texture2D(tDetail, p / 11.0 + .37).rgb;
         float dl = lum(d) / .19 * .75 + lum(d2) / .19 * .25;
         c *= mix(1., clamp(dl, .45, 1.8), uDetail * mix(.25, .9, road));
+        // sidewalks: the photo's trees are replaced by 3D ones → turn their imprint into shaded paving, add slab joints
+        float side = smoothstep(-22.6, -22.3, p.y) * (1. - smoothstep(-10.7, -10.45, p.y)) + smoothstep(8.95, 9.2, p.y) * (1. - smoothstep(21.1, 21.4, p.y));
+        float gr = clamp((cb.g - max(cb.r, cb.b)) * 18. + .15, 0., 1.);
+        c = mix(c, vec3(lum(cb)) * vec3(.62, .6, .58) * mix(.9, 1.15, dl), side * gr * uDetail);
+        float jx = smoothstep(.46, .5, abs(fract(p.x / .9) - .5)), jz = smoothstep(.46, .5, abs(fract(p.y / .6 + .5 * step(.5, fract(p.x / 1.8))) - .5));
+        c *= 1. - side * uDetail * .22 * max(jx, jz);
         // headlights & tail-lights of moving cars (x, z, dirX, on)
         vec3 add = vec3(0.);
         for (int i = 0; i < ${MAX_CARS}; i++) {
@@ -142,17 +154,18 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         gl_FragColor = vec4(c, 1.);
       }`,
   });
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(GW, GH, 1, 1), groundMat);
+  // beyond the photo the clamped edge texels simply continue the avenue (always under fog)
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(CITY.extent * 2 + 60, GH, 1, 1), groundMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
   // dark surround beyond the photo
-  const surround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({ color: 0x0c1119 }));
+  const surround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({ color: 0x141b27 }));
   surround.rotation.x = -Math.PI / 2; surround.position.y = -0.05; scene.add(surround);
 
   /* ---------- road furniture: curbs, crisp markings ---------- */
   const concrete = new THREE.MeshStandardMaterial({ color: 0x8a8d90, roughness: .85 });
   for (const z of [ROAD.medianZ0 + .1, ROAD.medianZ1 - .1]) {
-    const curb = new THREE.Mesh(new THREE.BoxGeometry(GW, .14, .2), concrete);
+    const curb = new THREE.Mesh(new THREE.BoxGeometry(CITY.extent * 2, .14, .2), concrete);
     curb.position.set(0, .07, z); scene.add(curb);
   }
   const paintCanvas = document.createElement('canvas'); paintCanvas.width = 256; paintCanvas.height = 32;
@@ -164,12 +177,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const paintTex = new THREE.CanvasTexture(paintCanvas); paintTex.wrapS = THREE.RepeatWrapping;
   const paintMat = new THREE.MeshBasicMaterial({ color: 0xc9ccd0, alphaMap: paintTex, transparent: true, opacity: .55, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
   const dashGeo = new THREE.PlaneGeometry(4.0, .14); dashGeo.rotateX(-Math.PI / 2);
-  const dashes = new THREE.InstancedMesh(dashGeo, paintMat, 70);
+  const dashes = new THREE.InstancedMesh(dashGeo, paintMat, 160);
   const m4 = new THREE.Matrix4(); let di = 0;
-  for (const z of [ROAD.dashS, ROAD.dashN]) for (let x = -GW / 2 + 4; x < GW / 2 - 4 && di < 70; x += 6.5) { m4.makeTranslation(x, .012, z); dashes.setMatrixAt(di++, m4); }
+  for (const z of [ROAD.dashS, ROAD.dashN]) for (let x = -CITY.extent + 4; x < CITY.extent - 4 && di < 160; x += 6.5) { m4.makeTranslation(x, .012, z); dashes.setMatrixAt(di++, m4); }
   dashes.count = di; scene.add(dashes);
   for (const z of ROAD.edges) {
-    const g = new THREE.PlaneGeometry(GW, .13); g.rotateX(-Math.PI / 2);
+    const g = new THREE.PlaneGeometry(CITY.extent * 2, .13); g.rotateX(-Math.PI / 2);
     const l = new THREE.Mesh(g, paintMat); l.position.set(0, .011, z); scene.add(l);
   }
 
@@ -179,11 +192,54 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const poleGeo = new THREE.CylinderGeometry(.06, .09, 7.2, 10); poleGeo.translate(0, 3.6, 0);
   const headGeo = new RoundedBoxGeometry(.75, .12, .3, 2, .04);
   const glowGeo = new THREE.PlaneGeometry(.6, .2); glowGeo.rotateX(Math.PI / 2);
+  const lampHeads = [];
   for (const z of LAMP_Z) for (const x of LAMPS_X) {
     const side = z < 0 ? 1 : -1; // heads lean towards the road
     const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(x, 0, z); scene.add(p);
     const h = new THREE.Mesh(headGeo, lampPole); h.position.set(x, 7.25, z + side * .25); scene.add(h);
     const g = new THREE.Mesh(glowGeo, lampGlow); g.position.set(x, 7.18, z + side * .25); scene.add(g);
+    lampHeads.push(V(x, 7.0, z + side * .25));
+  }
+  // soft halo around each lamp head: humid evening air
+  {
+    const c = document.createElement('canvas'); c.width = c.height = 128; const g = c.getContext('2d');
+    const gr = g.createRadialGradient(64, 64, 0, 64, 64, 64);
+    gr.addColorStop(0, 'rgba(255,214,160,1)'); gr.addColorStop(.12, 'rgba(255,190,120,.55)'); gr.addColorStop(.4, 'rgba(255,170,100,.12)'); gr.addColorStop(1, 'rgba(255,160,90,0)');
+    g.fillStyle = gr; g.fillRect(0, 0, 128, 128);
+    const haloMat = new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), blending: THREE.AdditiveBlending, depthWrite: false, transparent: true, opacity: .55, fog: true });
+    for (const h of lampHeads) { const sp = new THREE.Sprite(haloMat); sp.position.copy(h).add(V(0, .05, 0)); sp.scale.setScalar(2.6); scene.add(sp); }
+  }
+  // the avenue's lamps continue past the photo (visual only)
+  if (!isLow) for (const z of LAMP_Z) for (let x = 93; x < CITY.extent; x += 19) for (const sx of [-1, 1]) {
+    const side = z < 0 ? 1 : -1, xx = sx * x;
+    const p = new THREE.Mesh(poleGeo, lampPole); p.position.set(xx, 0, z); scene.add(p);
+    const h = new THREE.Mesh(headGeo, lampPole); h.position.set(xx, 7.25, z + side * .25); scene.add(h);
+    const g = new THREE.Mesh(glowGeo, lampGlow); g.position.set(xx, 7.18, z + side * .25); scene.add(g);
+  }
+
+  /* ---------- 3D city: sidewalks, planted median, trees, buildings ---------- */
+  const SKY = { top: 0x2c3f63, ground: 0x2a221b };
+  const city = buildCity({ scene, groundMat, ROAD, GW, lamps: lampHeads, isLow, sky: SKY });
+  // sky dome (only visible in the low, grazing shots)
+  {
+    const skyMat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false, fog: false,
+      uniforms: { uTop: { value: new THREE.Color(0x0b1a33) }, uHor: { value: new THREE.Color(0x46587a) }, uGlow: { value: new THREE.Color(0x9a6f55) } },
+      vertexShader: `varying vec3 vD; void main(){ vD = normalize(position); gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`,
+      fragmentShader: `uniform vec3 uTop, uHor, uGlow; varying vec3 vD;
+        void main(){ float h = clamp(vD.y, 0., 1.);
+          vec3 c = mix(uHor, uTop, pow(h, .55));
+          c += uGlow * pow(1. - h, 6.) * smoothstep(-.2, 1., -vD.x) * .55; // last light low in the west
+          gl_FragColor = vec4(c, 1.); }`,
+    });
+    const sky = new THREE.Mesh(new THREE.SphereGeometry(900, 32, 16), skyMat); sky.renderOrder = -10; scene.add(sky);
+    sky.onBeforeRender = (r, s, cam) => sky.position.copy(cam.position);
+  }
+  // a small pool of real lights follows the action so cars, pole and curbs pick up the lamps
+  const lampPool = Array.from({ length: isLow ? 2 : 4 }, () => { const l = new THREE.PointLight(0xffc48a, 55, 26, 2); scene.add(l); return l; });
+  function updateLampPool(focus) {
+    const sorted = lampHeads.map(p => [p.distanceToSquared(focus), p]).sort((a, b) => a[0] - b[0]);
+    lampPool.forEach((l, i) => l.position.copy(sorted[i][1]).add(V(0, -.25, 0)));
   }
 
   /* ---------- cars (generic saloon, de-badged) ---------- */
@@ -255,66 +311,13 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     trim: new THREE.MeshStandardMaterial({ color: 0x121316, metalness: .2, roughness: .45 }),
     alu: new THREE.MeshStandardMaterial({ color: 0x9da2a8, metalness: .9, roughness: .35 }),
     rim: new THREE.MeshPhysicalMaterial({ color: 0x8e939a, metalness: .92, roughness: .32, clearcoat: .6, clearcoatRoughness: .2, envMapIntensity: 1.1 }),
-    atlas: new THREE.MeshStandardMaterial({ map: atlas, normalMap: atlasN, roughness: .6, metalness: .1 }),
+    // interior leather etc.: the source atlas is very pale — bring it to a deep espresso/tan cabin
+    atlas: new THREE.MeshStandardMaterial({ map: atlas, normalMap: atlasN, roughness: .6, metalness: .1, color: 0x6b5d50 }),
     dark: new THREE.MeshStandardMaterial({ color: 0x0b0c0e, roughness: .9 }),
   };
-  // driver in a dark suit, seated behind the steering wheel (left-hand drive)
+  // steering-wheel centre: the seated driver (driver.js) is posed from it
   const wheelObj = model.getObjectByName('方向盘');
   const wheelC = wheelObj ? new THREE.Box3().setFromObject(wheelObj).getCenter(new THREE.Vector3()) : V(-.38, .95, -.55);
-  const dmat = {
-    suit: new THREE.MeshStandardMaterial({ color: 0x161b26, roughness: .78 }),
-    shirt: new THREE.MeshStandardMaterial({ color: 0xf2f2ef, roughness: .6, emissive: 0xffffff, emissiveIntensity: .05 }),
-    tie: new THREE.MeshStandardMaterial({ color: 0x3a0f16, roughness: .45 }),
-    skin: new THREE.MeshStandardMaterial({ color: 0xc69a7e, roughness: .55, emissive: 0x6a4434, emissiveIntensity: .12 }),
-    hair: new THREE.MeshStandardMaterial({ color: 0x241914, roughness: .7 }),
-  };
-  function limb(a, b, r, mat) {
-    const len = a.distanceTo(b);
-    const m = new THREE.Mesh(new THREE.CapsuleGeometry(r, Math.max(.01, len - r * 2), 6, 14), mat);
-    m.position.copy(a).add(b).multiplyScalar(.5);
-    m.quaternion.setFromUnitVectors(V(0, 1, 0), b.clone().sub(a).normalize());
-    return m;
-  }
-  function makeDriver() {
-    const d = new THREE.Group();
-    const hip = V(wheelC.x, wheelC.y - .5, wheelC.z + .56);
-    const lean = .2; // reclined seat
-    const chest = hip.clone().add(V(0, .36, .36 * Math.tan(lean) * .5));
-    // torso (jacket)
-    const torso = new THREE.Mesh(new THREE.CapsuleGeometry(.165, .3, 8, 20), dmat.suit);
-    torso.scale.set(1.2, 1, .72); torso.position.copy(hip).add(V(0, .3, .05)); torso.rotation.x = lean; d.add(torso);
-    // shirt V, tie
-    const sgeo = new THREE.CircleGeometry(.07, 3); sgeo.rotateZ(-Math.PI / 2); // V pointing down
-    const shirt = new THREE.Mesh(sgeo, dmat.shirt);
-    shirt.rotation.set(lean, Math.PI, 0); shirt.scale.set(1, 1.6, 1);
-    shirt.position.copy(chest).add(V(0, .1, -.125)); d.add(shirt);
-    const tie = new THREE.Mesh(new THREE.BoxGeometry(.035, .2, .01), dmat.tie);
-    tie.rotation.x = -lean * .6; tie.position.copy(chest).add(V(0, .03, -.13)); d.add(tie);
-    // neck & head
-    const neckBase = chest.clone().add(V(0, .2, .05));
-    d.add(limb(neckBase, neckBase.clone().add(V(0, .11, -.01)), .055, dmat.skin));
-    const head = new THREE.Mesh(new THREE.SphereGeometry(.1, 28, 20), dmat.skin);
-    head.scale.set(.88, 1.12, 1.02); head.position.copy(neckBase).add(V(0, .2, -.015)); d.add(head);
-    const hair = new THREE.Mesh(new THREE.SphereGeometry(.104, 28, 16, 0, Math.PI * 2, 0, Math.PI * .55), dmat.hair);
-    hair.scale.set(.9, 1.05, 1.06); hair.rotation.x = .35; hair.position.copy(head.position).add(V(0, .018, .012)); d.add(hair);
-    // shirt collar
-    const collar = new THREE.Mesh(new THREE.TorusGeometry(.062, .014, 8, 20), dmat.shirt);
-    collar.rotation.x = Math.PI / 2; collar.position.copy(neckBase).add(V(0, .02, 0)); d.add(collar);
-    // arms to the wheel (hands at 9 and 3 o'clock)
-    for (const sx of [-1, 1]) {
-      const sh = chest.clone().add(V(sx * .2, .14, .04));
-      const hand = wheelC.clone().add(V(sx * .17, .02, .03));
-      const elbow = sh.clone().lerp(hand, .5).add(V(sx * .07, -.12, .04));
-      d.add(new THREE.Mesh(new THREE.SphereGeometry(.07, 16, 12), dmat.suit).translateX(sh.x).translateY(sh.y).translateZ(sh.z));
-      d.add(limb(sh, elbow, .052, dmat.suit));
-      d.add(limb(elbow, hand.clone().add(V(0, 0, .06)), .045, dmat.suit));
-      const cuff = limb(hand.clone().add(V(0, 0, .07)), hand.clone().add(V(0, 0, .045)), .038, dmat.shirt); d.add(cuff);
-      const h = new THREE.Mesh(new THREE.SphereGeometry(.04, 14, 10), dmat.skin); h.scale.set(.8, 1, 1.3); h.position.copy(hand); d.add(h);
-    }
-    // thighs
-    for (const sx of [-1, 1]) d.add(limb(hip.clone().add(V(sx * .1, 0, 0)), hip.clone().add(V(sx * .11, .05, -.42)), .075, dmat.suit));
-    return d;
-  }
 
   function buildCar(color, withPlates) {
     const car = carSrc.clone(true);
@@ -334,7 +337,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       else if (mn === 'Gar_LXe') o.material = shared.dark;           // interior lamps
       else if (mn === 'MBSL_tex') o.material = inWheel ? shared.rim : shared.atlas;
     });
-    car.add(makeDriver());
+    const driver = seatDriver(driverTpl, car, wheelC);
     const group = new THREE.Group();
     car.rotation.y = -Math.PI / 2; // model front is −Z; world travel along +X
     group.add(car);
@@ -355,7 +358,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       plates = { front, back };
     }
     scene.add(group);
-    return { group, wheels, plates, dist: 0 };
+    return { group, wheels, plates, driver, dist: 0 };
   }
   const hero = buildCar(0x0a0b0d, true);
   const traffic = [];
@@ -383,7 +386,14 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
 
   const housing = new THREE.Group();
   const camModel = camGltf.scene;
-  camModel.traverse(o => { if (o.isMesh) { o.material.envMapIntensity = 1.4; } });
+  camModel.traverse(o => {
+    if (!o.isMesh) return;
+    const m = o.material; m.envMapIntensity = 1.25;
+    // new unit: clean powder-coated aluminium (the scan's texture is a weathered, plaster-like CCTV)
+    m.map = null; m.color.set(0xb9bdc2); m.metalness = .35; m.roughness = .38;
+    if (m.normalScale) m.normalScale.setScalar(.35);
+    m.roughnessMap = null; m.metalnessMap = null;
+  });
   camModel.scale.setScalar(1.35);
   housing.add(camModel);
   // IR illuminator beside the housing (local +Z = lens direction, +X = south side)
@@ -419,10 +429,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .55, .5, .92);
   composer.addPass(bloom);
   const grade = new ShaderPass({
-    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFeed: { value: 0 }, uFlash: { value: 0 }, uVig: { value: .9 }, uRes: { value: new THREE.Vector2(1, 1) } },
+    uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uFeed: { value: 0 }, uFlash: { value: 0 }, uVig: { value: .9 }, uRes: { value: new THREE.Vector2(1, 1) }, uVel: { value: new THREE.Vector2() } },
     vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
     fragmentShader: /* glsl */`
-      uniform sampler2D tDiffuse; uniform float uTime, uFeed, uFlash, uVig; uniform vec2 uRes; varying vec2 vUv;
+      uniform sampler2D tDiffuse; uniform float uTime, uFeed, uFlash, uVig; uniform vec2 uRes, uVel; varying vec2 vUv;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
       void main(){
         vec2 uv = vUv; vec2 cc = uv - .5;
@@ -430,6 +440,13 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         float k = uFeed * .06; uv = .5 + cc * (1. + k * dot(cc, cc));
         vec2 off = cc * (.0012 + uFeed * .0025);
         vec3 c = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
+        // camera motion blur (180° shutter) on fast moves only
+        float vl = length(uVel);
+        if (vl > .0006) {
+          vec3 acc = vec3(0.);
+          for (int i = 0; i < 9; i++) acc += texture2D(tDiffuse, uv + uVel * (float(i) / 8. - .5)).rgb;
+          c = mix(c, acc / 9., smoothstep(.0006, .004, vl));
+        }
         // feed grade: lifted blacks, slightly desaturated, cold
         float l = dot(c, vec3(.299,.587,.114));
         vec3 feed = mix(vec3(l), c, .55) * vec3(.94, 1., 1.04) + .012;
@@ -475,7 +492,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     return Math.min(visH / (2 * t), visW / (2 * t * aspect));
   }
 
-  const shot = { pos: V(), look: V(), up: V(0, 0, -1), fov: fovDeg };
+  const shot = { pos: V(), look: V(), up: V(0, 0, -1), fov: fovDeg, roll: 0 };
   const lookOverShoulder = V(POLE.x - 26, 0, CAR_Z);
 
   function computeShot(p, time) {
@@ -487,6 +504,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const ang = lerp(0, -Math.PI / 2, rotT);
     shot.up.set(Math.sin(-ang), 0, -Math.cos(ang));             // (0,0,-1) → (1,0,0)
     shot.fov = fovDeg;
+    shot.roll = 0;
 
     if (p < .46) {
       // A — nadir: frame from city to car
@@ -497,9 +515,11 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       const focusZ = lerp(lerp(-.7, CAR_Z, a), CAR_Z, b);
       shot.pos.set(focusX, alt, focusZ);
       shot.look.set(focusX, 0, focusZ);
-      // tiny drone sway
-      const sway = (1 - b * .6) * .0035 * alt;
-      shot.pos.x += Math.sin(time * .33) * sway; shot.pos.z += Math.cos(time * .27) * sway;
+      // drone hover: position drift scaled with altitude, gimbal roll drift, a gentle bank while yawing
+      const sway = (1 - b * .6) * .0032 * alt;
+      shot.pos.x += wob(time * .31, 1) * sway; shot.pos.z += wob(time * .27, 7) * sway;
+      shot.pos.y += wob(time * .23, 4) * sway * .6;
+      shot.roll = wob(time * .21, 3) * .006 + (startAngle === 1 ? 0 : Math.sin(Math.PI * rotT) * .045);
     } else if (p < .64) {
       // B — rush ahead to the checkpoint (nadir), descend onto the ANPR camera, swing behind it
       const t = range(p, .46, .64);
@@ -530,12 +550,15 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         shot.up.set(-1, 0, 0).lerp(V(0, 1, 0), ease(range(e, 0, .7))).normalize();
         shot.fov = lerp(fovDeg, 38, e);
       }
-      const hover = 1 - ease(range(t, .55, .9));
-      shot.pos.x += Math.sin(time * .7) * .02 * hover; shot.pos.z += Math.cos(time * .53) * .02 * hover;
+      const hover = 1 - ease(range(t, .55, .9)) * .75;
+      shot.pos.x += wob(time * .6, 2) * .03 * hover; shot.pos.z += wob(time * .5, 9) * .03 * hover; shot.pos.y += wob(time * .45, 5) * .015 * hover;
+      shot.roll = wob(time * .4, 6) * .01 * hover + (t > .4 && t < .68 ? Math.sin(Math.PI * (t - .4) / .28) * .04 : 0);
     } else {
       // C — through the lens: ANPR feed (fixed mount, slow optical zoom)
       shot.pos.copy(lensWorld);
       shot.look.set(POLE.x - 22, .4, CAR_Z + .25);
+      // the pole sways a hair in the wind
+      shot.look.y += wob(time * 1.3, 8) * .012; shot.look.z += wob(time * 1.1, 2) * .01;
       shot.up.set(0, 1, 0);
       shot.fov = lerp(24, 18.5, easeIO(range(p, .64, .84)));
     }
@@ -545,6 +568,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   let progress = 0, smoothP = 0, running = false, raf = 0, lastT = performance.now(), clockT = 0;
   const hudState = { p: 0, phase: 'aerial', carBox: null, plateBox: null, carScreen: null, visible: false };
   const proj = V();
+  const prevVP = new THREE.Matrix4();
 
   function projectBox(obj, pad = 0) {
     const box = new THREE.Box3().setFromObject(obj);
@@ -583,10 +607,16 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     cars[0].set(hx, CAR_Z, 1, 1);
     traffic.forEach((c, i) => { if (i + 1 < MAX_CARS) cars[i + 1].set(c.group.position.x, c.def.lane, c.def.dir, 1); });
 
+    city.update(clockT);
+    hero.driver.update(clockT);
     computeShot(p, clockT);
+    if (window.__cam) { const c = window.__cam; shot.pos.set(...c.pos); shot.look.set(...c.look); shot.up.set(0, 1, 0); shot.fov = c.fov || 40; shot.roll = 0; }
+    updateLampPool(tmpB.copy(shot.look).lerp(hero.group.position, .5));
     camera.position.copy(shot.pos);
     camera.up.copy(shot.up);
     camera.lookAt(shot.look);
+    if (shot.roll) camera.rotateZ(shot.roll);
+    camera.updateMatrixWorld();
     if (Math.abs(camera.fov - shot.fov) > .01) { camera.fov = shot.fov; camera.updateProjectionMatrix(); }
     // near plane tight when close to the housing
     const near = p > .5 ? .02 : .3; if (camera.near !== near) { camera.near = near; camera.updateProjectionMatrix(); }
@@ -612,6 +642,16 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const feed = ease(range(p, .638, .645));
     grade.uniforms.uFeed.value = feed;
     grade.uniforms.uTime.value = clockT;
+    // screen-space velocity of what the camera looks at → motion blur vector
+    {
+      proj.copy(shot.look).applyMatrix4(prevVP);
+      const cur = tmpA.copy(shot.look).project(camera);
+      const k = dt > 0 ? (1 / 60) / Math.max(dt, 1 / 240) * .5 : 0;
+      const vx = (cur.x - proj.x) * .5 * k, vy = (cur.y - proj.y) * .5 * k;
+      const vlen = Math.hypot(vx, vy), cap = .035;
+      grade.uniforms.uVel.value.set(vx, vy).multiplyScalar(vlen > cap ? cap / vlen : 1).multiplyScalar(p > .64 ? 0 : 1);
+      prevVP.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
+    }
     const flash = Math.max(0, 1 - Math.abs(p - .641) / .005);
     grade.uniforms.uFlash.value = ease(flash) * .9;
     bloom.strength = lerp(.55, .8, feed);
