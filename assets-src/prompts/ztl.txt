@@ -1,6 +1,7 @@
 Formato: landscape 1536x1024.
-Soggetto: fotografia reale di un varco ZTL in un centro storico italiano: palo con telecamera di controllo accessi e pannello luminoso a LED rettangolare con la scritta rossa "VARCO ATTIVO", accanto al cartello stradale circolare di divieto (bordo rosso, centro bianco). Strada lastricata in pietra, palazzi storici color ocra, sera presto con luci calde.
-Inquadratura: tre quarti, varco nitido a destra, via storica che prosegue sfocata.
-Stile: fotografia editoriale reale, premium, cinematografica.
-Testo: solo "VARCO ATTIVO" sul pannello, esatto. Nessun altro testo.
-Vincoli: nessun logo, nessuna filigrana, nessuna persona riconoscibile.
+Soggetto: varco di accesso a una zona a traffico limitato in un centro storico italiano: palo antracite con telecamera di controllo accessi e pannello a messaggio variabile LED rettangolare con la scritta rossa a matrice di punti "VARCO ATTIVO", sotto il cartello circolare di divieto di transito (bordo rosso, centro bianco). Via lastricata in pietra con binari del tram dismessi, palazzi storici color ocra e mattone con persiane verdi, lampioni a lanterna accesi, qualche scooter parcheggiato sfocato.
+Inquadratura: 35mm f/2 a tre quarti, il varco a fuoco a destra, la via che prosegue sfocata con luci calde.
+Luce: sera presto, cielo blu, lanterne calde riflesse sul selciato leggermente umido.
+Testo: solo "VARCO ATTIVO" sul pannello LED, esatto, nessun altro testo.
+Stile: vera fotografia documentaria/editoriale scattata con full-frame (Sony A7R IV o Canon R5) e obiettivo fisso, NON un render 3D, NON CGI, NON illustrazione. Micro-imperfezioni reali: polvere, graffi leggeri, macchie di pioggia asciutte sul metallo, asfalto usurato, grana fine del sensore, piccola aberrazione cromatica ai bordi, bilanciamento del bianco naturale. Proporzioni e scale fisicamente corrette.
+Vincoli: nessun logo, nessun marchio, nessuna filigrana, nessuna persona riconoscibile, nessuna targa leggibile.

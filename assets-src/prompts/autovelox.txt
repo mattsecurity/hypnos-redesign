@@ -1,5 +1,6 @@
 Formato: landscape 1536x1024.
-Soggetto: fotografia reale di un autovelox fisso italiano: postazione a colonnina cilindrica arancione e grigia a bordo di una strada provinciale italiana, con piccola finestra scura per la telecamera. Strada con asfalto e linee bianche, guardrail, campagna lombarda sullo sfondo, luce morbida del tardo pomeriggio.
-Inquadratura: tre quarti, la colonnina nitida nel terzo destro, strada che fugge in prospettiva a sinistra, profondità di campo ridotta.
-Stile: fotografia editoriale reale, premium, colori naturali.
-Vincoli: nessun testo leggibile, nessun logo, nessuna filigrana, nessuna persona.
+Soggetto: postazione fissa di rilevamento velocità italiana a bordo di una strada extraurbana lombarda: box metallico grigio chiaro su palo, con finestra frontale scura per la telecamera e il radar, piccolo flash separato, cartello di preavviso controllo velocità poco più indietro (solo pittogramma, nessuna scritta leggibile). Strada a due corsie con asfalto vissuto, linee bianche consumate, banchina con erba, guardrail, filari di pioppi e campi.
+Inquadratura: 50mm f/2.8 ad altezza d'uomo dal bordo strada, postazione a fuoco nel terzo destro, strada che fugge in prospettiva a sinistra con un'auto lontana sfocata con fari accesi.
+Luce: tardo pomeriggio d'autunno, sole basso radente e caldo, leggera foschia padana.
+Stile: vera fotografia documentaria/editoriale scattata con full-frame (Sony A7R IV o Canon R5) e obiettivo fisso, NON un render 3D, NON CGI, NON illustrazione. Micro-imperfezioni reali: polvere, graffi leggeri, macchie di pioggia asciutte sul metallo, asfalto usurato, grana fine del sensore, piccola aberrazione cromatica ai bordi, bilanciamento del bianco naturale. Proporzioni e scale fisicamente corrette.
+Vincoli: nessun logo, nessun marchio, nessuna filigrana, nessuna persona riconoscibile, nessuna targa leggibile.

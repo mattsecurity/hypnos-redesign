@@ -83,25 +83,22 @@
         <span>CAM 04 · VIALE · DIREZIONE EST</span>
         <span class="feed__clock" id="feed-clock">--</span>
       </div>
-      <div class="box box--car" id="box-car"><span>AUTOVETTURA · 98,7%</span></div>
+      <div class="box box--car" id="box-car"><span>VEICOLO</span></div>
       <div class="box box--plate" id="box-plate"><i class="scan"></i></div>
       <div class="read" id="read">
         <div class="read__crop"><canvas id="plate-crop" width="520" height="110"></canvas></div>
         <div class="read__ocr" id="ocr">·······</div>
-        <div class="read__meta"><span>ITALIA</span><span>CONFIDENZA 99,4%</span><span>12 ms</span></div>
+        <div class="read__meta"><span>ITALIA</span><span>TARGA FITTIZIA</span></div>
       </div>
       <ul class="checks" id="checks">
         <li><span>Targa</span><b>GM 471 KX</b><em class="ok"></em></li>
-        <li><span>Classe veicolo</span><b>Autovettura</b><em class="ok"></em></li>
-        <li><span>Colore</span><b>Nero</b><em class="ok"></em></li>
-        <li><span>Velocità rilevata</span><b>47 km/h <small>limite 50</small></b><em class="ok"></em></li>
-        <li><span>Copertura RCA</span><b>Valida</b><em class="ok"></em></li>
-        <li><span>Revisione</span><b>Regolare</b><em class="ok"></em></li>
-        <li><span>Veicoli rubati</span><b>Nessuna segnalazione</b><em class="ok"></em></li>
-        <li><span>Accesso ZTL</span><b>Autorizzato</b><em class="ok"></em></li>
+        <li><span>Velocità rilevata</span><b>47 km/h</b><em class="ok"></em></li>
+        <li><span>Punto di controllo</span><b>CAM 04</b><em class="ok"></em></li>
+        <li><span>Transito</span><b>Registrato</b><em class="ok"></em></li>
+        <li><span>Gestionale</span><b>Dato disponibile</b><em class="ok"></em></li>
       </ul>
       <div class="logged" id="logged"><i></i>Transito registrato <span id="logged-time"></span></div>
-      <div class="feed__bottom"><span>ANPR · IR 850 nm · 50 fps</span><span>Simulazione illustrativa · targa fittizia</span></div>
+      <div class="feed__bottom"><span>Telecamera a lettura targhe</span><span>Simulazione illustrativa · targa fittizia</span></div>
     </div>
 
     <!-- chapters -->
@@ -124,22 +121,22 @@
       <article class="chapter" data-in=".5" data-out=".62">
         <p class="eyebrow"><b>03</b> Il punto di controllo</p>
         <h2>Un occhio che<br>non si distrae.</h2>
-        <p>Telecamera ANPR con illuminatore a infrarossi. Giorno e notte, con ogni condizione di luce.</p>
+        <p>Telecamere a lettura targhe in noleggio o in vendita, installate e mantenute da HYPNOS.</p>
       </article>
       <article class="chapter chapter--feed" data-in=".67" data-out=".79">
         <p class="eyebrow"><b>04</b> La lettura</p>
         <h2>La targa, in una<br>frazione di secondo.</h2>
-        <p>Rilevamento del veicolo, localizzazione della targa, riconoscimento dei caratteri.</p>
+        <p>La telecamera legge la targa del veicolo in transito.</p>
       </article>
       <article class="chapter chapter--feed" data-in=".81" data-out="1.2">
-        <p class="eyebrow"><b>05</b> Oltre la targa</p>
-        <h2>Un solo passaggio.<br>Tutte le verifiche.</h2>
-        <p>Il dato entra nel gestionale e incrocia le banche dati previste: assicurazione, revisione, liste di controllo, permessi ZTL.</p>
+        <p class="eyebrow"><b>05</b> Dalla strada all’ufficio</p>
+        <h2>Il dato arriva<br>al gestionale.</h2>
+        <p>Sviluppiamo software per la gestione della sicurezza stradale, con un supporto professionale e continuativo.</p>
       </article>
     </div>
 
     <div class="rail" id="rail" aria-hidden="true">
-      <span data-at="0">Città</span><span data-at=".31">Veicolo</span><span data-at=".5">Controllo</span><span data-at=".67">Lettura</span><span data-at=".81">Verifiche</span>
+      <span data-at="0">Città</span><span data-at=".31">Veicolo</span><span data-at=".5">Controllo</span><span data-at=".67">Lettura</span><span data-at=".81">Gestionale</span>
       <i id="rail-fill"></i>
     </div>
     <div class="scroll-hint" id="scroll-hint" aria-hidden="true"><span>Scorri per seguire il veicolo</span><i></i></div>
@@ -173,16 +170,16 @@
         <div class="card__body">
           <span class="card__n">01</span>
           <h3>Telecamere a lettura targhe</h3>
-          <p>Riconoscimento automatico delle targhe, giorno e notte. Controllo dei transiti, verifica di assicurazione e revisione, liste di controllo e analisi dei flussi.</p>
-          <ul><li>Illuminazione IR</li><li>Lettura in movimento</li><li>Integrazione con il gestionale</li></ul>
+          <p>Telecamere a lettura targhe in noleggio o in vendita, con installazione, manutenzione e supporto tecnico.</p>
+          <ul><li>Noleggio o vendita</li><li>Installazione e manutenzione</li><li>Supporto tecnico</li></ul>
         </div>
       </article>
       <article class="card">
-        <div class="card__media"><img src="assets/img/autovelox.webp" alt="Postazione autovelox fissa a bordo di una strada provinciale" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__media"><img src="assets/img/autovelox.webp" alt="Postazione fissa di rilevamento velocità a bordo di una strada extraurbana" loading="lazy" width="1536" height="1024"></div>
         <div class="card__body">
           <span class="card__n">02</span>
           <h3>Autovelox</h3>
-          <p>Apparecchiature per il controllo della velocità istantanea, in postazione fissa, in noleggio o in vendita. Con la gestione integrata dei verbali generati dal servizio.</p>
+          <p>Apparecchiature per il controllo della velocità dei veicoli, in noleggio o in vendita, con la gestione del servizio integrato dei verbali generati dal servizio.</p>
           <ul><li>Noleggio o vendita</li><li>Installazione e manutenzione</li><li>Gestione dei verbali</li></ul>
         </div>
       </article>
@@ -191,8 +188,8 @@
         <div class="card__body">
           <span class="card__n">03</span>
           <h3>Tutor</h3>
-          <p>Controllo della velocità media su tratta, tra due punti di rilevazione. Una prevenzione continua, che non si limita a un singolo punto della strada.</p>
-          <ul><li>Velocità media</li><li>Due varchi di rilevazione</li><li>Servizio integrato</li></ul>
+          <p>Sistemi Tutor per il controllo della velocità, in noleggio o in vendita, con la relativa gestione e il servizio integrato dei verbali.</p>
+          <ul><li>Noleggio o vendita</li><li>Controllo della velocità</li><li>Gestione dei verbali</li></ul>
         </div>
       </article>
       <article class="card">
@@ -200,8 +197,8 @@
         <div class="card__body">
           <span class="card__n">04</span>
           <h3>Varchi ZTL</h3>
-          <p>Controllo degli accessi alle zone a traffico limitato. Il passaggio viene confrontato con permessi e fasce orarie stabilite dal Comune.</p>
-          <ul><li>Liste bianche e permessi</li><li>Fasce orarie</li><li>Pannelli di stato</li></ul>
+          <p>Apparecchiature per le zone a traffico limitato, in noleggio o in vendita, con installazione, manutenzione e relativa gestione.</p>
+          <ul><li>Noleggio o vendita</li><li>Installazione e manutenzione</li><li>Relativa gestione</li></ul>
         </div>
       </article>
       <article class="card">
@@ -232,30 +229,33 @@
 
 <!-- ============ SOSTA ============ -->
 <section class="parking" id="sosta" data-nav="light">
-  <div class="wrap parking__grid">
-    <div class="parking__copy">
-      <p class="eyebrow">Gestione della sosta a pagamento</p>
-      <h2 class="split">La sosta, chiavi in mano.</h2>
-      <p>Affianchiamo i Comandi di Polizia Locale nella gestione integrata delle aree in cui la sosta è regolamentata e soggetta a pagamento. Un unico servizio, dal primo sopralluogo alla gestione quotidiana.</p>
-      <ol class="steps-list" id="parking-list">
-        <li><b>Fornitura</b><span>Parcometri moderni, scelti in base al contesto.</span></li>
-        <li><b>Installazione</b><span>Posa e configurazione su strada.</span></li>
-        <li><b>Segnaletica</b><span>Orizzontale e verticale, realizzata da noi.</span></li>
-        <li><b>Manutenzione</b><span>Interventi programmati e su chiamata.</span></li>
-        <li><b>Gestione</b><span>Con personale altamente qualificato.</span></li>
+  <div class="wrap parking__intro">
+    <p class="eyebrow">Gestione della sosta a pagamento</p>
+    <h2 class="split">La sosta, chiavi in mano.</h2>
+    <p>Affianchiamo i Comandi di Polizia Locale nella gestione integrata delle aree in cui la sosta dei veicoli è regolamentata e soggetta al pagamento tramite parcometri. Fornitura, installazione, manutenzione, segnaletica e gestione: tutto chiavi in mano.</p>
+  </div>
+  <div class="parking__pin">
+    <div class="wrap parking__stage">
+      <ol class="pk-steps">
+        <li><i>01</i><div><b>Fornitura</b><span>Fornitura dei parcometri.</span></div></li>
+        <li><i>02</i><div><b>Installazione</b><span>Installazione dei parcometri su strada.</span></div></li>
+        <li><i>03</i><div><b>Segnaletica</b><span>Realizzazione della segnaletica orizzontale e verticale.</span></div></li>
+        <li><i>04</i><div><b>Manutenzione</b><span>Manutenzione dei parcometri.</span></div></li>
+        <li><i>05</i><div><b>Gestione</b><span>Gestione con personale altamente qualificato.</span></div></li>
       </ol>
-    </div>
-    <div class="parking__visual">
-      <figure class="parking__photo"><img src="assets/img/parcometro.webp" alt="Parcometro e auto in sosta lungo le strisce blu" loading="lazy" width="1536" height="1024"></figure>
-      <svg class="parking__plan" id="parking-plan" viewBox="0 0 600 260" aria-hidden="true">
-        <rect x="0" y="0" width="600" height="260" rx="18" class="pl-bg"/>
-        <line x1="20" y1="168" x2="580" y2="168" class="pl-curb"/>
-        <g class="pl-stalls"></g>
-        <g class="pl-cars"></g>
-        <g class="pl-meter" transform="translate(300 196)"><rect x="-7" y="-20" width="14" height="30" rx="3"/><circle cx="0" cy="-26" r="10" class="pl-pulse"/></g>
-        <text x="24" y="232" class="pl-label">STALLI BLU · VIA ESEMPIO</text>
-        <text x="576" y="232" class="pl-label pl-occ" text-anchor="end" id="pl-occ">OCCUPAZIONE 0%</text>
-      </svg>
+      <div class="pk-view">
+        <canvas id="pk-canvas" aria-label="Simulazione illustrativa di una via con stalli di sosta a pagamento"></canvas>
+        <div class="pk-phase" id="pk-phase"><b>01</b> Fornitura</div>
+        <figure class="pk-photo" id="pk-photo"><img src="assets/img/parcometro.webp" alt="Parcometro su un marciapiede di Milano" loading="lazy" width="1536" height="1024"><figcaption>Parcometri · fornitura, installazione e manutenzione</figcaption></figure>
+        <div class="pk-install" id="pk-install"><span>Installazione del parcometro</span><b><i></i></b></div>
+        <div class="pk-hud">
+          <div class="pk-chip"><span>Occupazione</span><b id="pk-occ">0%</b><em class="pk-bar"><i id="pk-occbar"></i></em></div>
+          <div class="pk-chip"><span>Stalli liberi</span><b id="pk-free">16</b></div>
+          <div class="pk-chip"><span>Riscosso (simulazione)</span><b id="pk-rev">€ 0,00</b></div>
+        </div>
+        <div class="pk-toasts" id="pk-toasts" aria-live="off"></div>
+        <p class="pk-note">Simulazione illustrativa · dati fittizi</p>
+      </div>
     </div>
   </div>
 </section>
@@ -263,19 +263,82 @@
 <!-- ============ VERBALI / SERVIZIO INTEGRATO ============ -->
 <section class="pipeline" id="verbali" data-nav="dark">
   <div class="pipeline__bg" aria-hidden="true"><img src="assets/img/tutor.webp" alt="" loading="lazy"></div>
-  <div class="wrap">
-    <div class="pipeline__head">
-      <p class="eyebrow eyebrow--light">Noleggio Tutor, autovelox, ZTL e relativa gestione</p>
-      <h2 class="split">Dal rilevamento al verbale.<br>Un servizio integrato.</h2>
-      <p>Non solo apparecchiature: affianchiamo il Comando nella gestione del servizio integrato dei verbali generati dai dispositivi, lasciando agli operatori il controllo di ogni decisione.</p>
-    </div>
-    <div class="flow" id="flow">
-      <svg class="flow__line" viewBox="0 0 1000 4" preserveAspectRatio="none" aria-hidden="true"><line x1="0" y1="2" x2="1000" y2="2" class="flow__base"/><line x1="0" y1="2" x2="1000" y2="2" class="flow__prog" id="flow-prog"/></svg>
-      <div class="flow__step"><i>01</i><h3>Rilevazione</h3><p>Il dispositivo acquisisce immagini e dati dell’evento.</p></div>
-      <div class="flow__step"><i>02</i><h3>Validazione</h3><p>L’operatore verifica ogni evento prima di procedere.</p></div>
-      <div class="flow__step"><i>03</i><h3>Verbalizzazione</h3><p>Il verbale viene generato in modo ordinato e tracciabile.</p></div>
-      <div class="flow__step"><i>04</i><h3>Notifica</h3><p>Gestione degli invii e delle comunicazioni.</p></div>
-      <div class="flow__step"><i>05</i><h3>Rendicontazione</h3><p>Report chiari per il Comando e l’amministrazione.</p></div>
+  <div class="pipeline__pin">
+    <div class="wrap pipeline__grid">
+      <div class="pipeline__side">
+        <div class="pipeline__head">
+          <p class="eyebrow eyebrow--light">Noleggio Tutor, autovelox, ZTL e relativa gestione</p>
+          <h2 class="split">Dal rilevamento al verbale.<br>Un servizio integrato.</h2>
+          <p>Affianchiamo i Comandi di Polizia Municipale con il noleggio e/o la vendita di apparecchiature per il controllo della velocità dei veicoli e la gestione del servizio integrato dei verbali generati dal servizio.</p>
+        </div>
+        <ol class="pv-steps" id="pv-steps">
+          <li><i>01</i><b>Apparecchiature</b><span>Tutor, autovelox e ZTL in noleggio e/o vendita.</span></li>
+          <li><i>02</i><b>Controllo della velocità</b><span>Le apparecchiature rilevano la velocità dei veicoli.</span></li>
+          <li><i>03</i><b>Gestione dei verbali</b><span>Il servizio integrato dei verbali generati dal servizio.</span></li>
+          <li><i>04</i><b>Software</b><span>Software per la gestione della sicurezza stradale.</span></li>
+          <li><i>05</i><b>Supporto continuativo</b><span>Affiancamento professionale alla pubblica amministrazione.</span></li>
+          <em class="pv-rail"><em id="pv-fill"></em></em>
+        </ol>
+      </div>
+      <div class="pv-panel" id="pv-panel" aria-label="Esempio illustrativo del flusso di gestione di un evento">
+        <div class="pv-bar"><span class="pv-dots"><i></i><i></i><i></i></span><span>Fascicolo evento · <b id="pv-id">EV-26-0418</b></span><span class="pv-status" id="pv-status">Apparecchiature</span></div>
+        <div class="pv-body">
+          <!-- 1. Apparecchiature -->
+          <div class="pv-scene" data-s="0">
+            <div class="pv-gear">
+              <figure><img src="assets/img/tutor-sm.webp" alt="" loading="lazy"><figcaption>Tutor</figcaption></figure>
+              <figure><img src="assets/img/autovelox-sm.webp" alt="" loading="lazy"><figcaption>Autovelox</figcaption></figure>
+              <figure><img src="assets/img/ztl-sm.webp" alt="" loading="lazy"><figcaption>ZTL</figcaption></figure>
+            </div>
+            <div class="pv-modes"><span>Noleggio</span><span>Vendita</span><span>Relativa gestione</span></div>
+          </div>
+          <!-- 2. Controllo della velocità -->
+          <div class="pv-scene" data-s="1">
+            <div class="pv-shot">
+              <img src="assets/img/tutor.webp" alt="" loading="lazy">
+              <span class="pv-box"></span>
+              <span class="pv-tag">Controllo della velocità · simulazione</span>
+              <span class="pv-time" id="pv-time">16/10/2026 · 18:42:07</span>
+            </div>
+            <div class="pv-meter">
+              <div class="pv-gauge"><svg viewBox="0 0 120 70"><path d="M10 64 A50 50 0 0 1 110 64" class="g-bg"/><path d="M10 64 A50 50 0 0 1 110 64" class="g-val" id="pv-gauge"/></svg><b id="pv-speed">0</b><span>km/h rilevati</span></div>
+              <div class="pv-facts"><p><span>Limite (esempio)</span><b>70 km/h</b></p><p><span>Targa</span><b class="pv-plate">GM 471 KX</b></p></div>
+            </div>
+          </div>
+          <!-- 3. Gestione dei verbali -->
+          <div class="pv-scene" data-s="2">
+            <div class="pv-doc">
+              <header><b>Verbale</b><span>Servizio integrato dei verbali</span></header>
+              <dl>
+                <div><dt>Targa</dt><dd data-type="GM 471 KX"></dd></div>
+                <div><dt>Velocità rilevata</dt><dd data-type="82 km/h"></dd></div>
+                <div><dt>Data</dt><dd data-type="16/10/2026 · 18:42"></dd></div>
+                <div><dt>Apparecchiatura</dt><dd data-type="Controllo velocità"></dd></div>
+                <div><dt>Stato</dt><dd data-type="In gestione"></dd></div>
+              </dl>
+              <footer><svg class="pv-qr" viewBox="0 0 21 21" id="pv-qr"></svg><span>Esempio illustrativo<br><small>dati e targa fittizi</small></span></footer>
+            </div>
+          </div>
+          <!-- 4. Software -->
+          <div class="pv-scene" data-s="3">
+            <div class="pv-soft">
+              <div class="pv-rows" id="pv-rows"><div class="pv-row pv-row--head"><span>Targa</span><span>Apparecchiatura</span><span>Stato</span></div></div>
+              <div class="pv-bars" id="pv-bars"></div>
+            </div>
+          </div>
+          <!-- 5. Supporto continuativo -->
+          <div class="pv-scene" data-s="4">
+            <ul class="pv-support">
+              <li><i></i><b>Analisi delle esigenze</b></li>
+              <li><i></i><b>Supporto in fase di progettazione</b></li>
+              <li><i></i><b>Installazione e manutenzione dei dispositivi</b></li>
+              <li><i></i><b>Gestione operativa, dal back office al front end</b></li>
+              <li><i></i><b>Supporto professionale e continuativo</b></li>
+            </ul>
+          </div>
+        </div>
+        <p class="pv-note">Esempio illustrativo · dati fittizi</p>
+      </div>
     </div>
   </div>
 </section>
@@ -288,8 +351,8 @@
       <h2 class="split">Meno complessità.<br>Più controllo.</h2>
       <p>La tecnologia in strada ha bisogno di strumenti chiari in ufficio. Sviluppiamo software per la gestione della sicurezza stradale e restiamo al fianco degli operatori con un supporto professionale e continuativo.</p>
       <div class="kpis">
-        <div><b>24/7</b><span>Dispositivi operativi, giorno e notte</span></div>
-        <div><b>1</b><span>Interlocutore, dalla strada all’ufficio</span></div>
+        <div><b>PA</b><span>Software per Polizie Locali e Pubbliche Amministrazioni</span></div>
+        <div><b>1</b><span>Interlocutore, dall’analisi alla gestione operativa</span></div>
         <div><b>360°</b><span>Dal back office al front end</span></div>
       </div>
     </div>
@@ -304,7 +367,7 @@
         </div>
         <div class="dash__side">
           <div class="dash__stat"><span>Transiti oggi</span><b id="dash-count">12.480</b><svg viewBox="0 0 120 32" class="spark"><polyline id="spark" points=""/></svg></div>
-          <div class="dash__list"><div class="dash__head"><span>Ora</span><span>Targa</span><span>Varco</span><span>Esito</span></div><ul id="dash-list"></ul></div>
+          <div class="dash__list"><div class="dash__head"><span>Ora</span><span>Targa</span><span>Varco</span><span>Stato</span></div><ul id="dash-list"></ul></div>
         </div>
       </div>
       <p class="dash__note">Interfaccia illustrativa · dati fittizi</p>
@@ -321,11 +384,11 @@
     </div>
     <div class="method__track" id="method">
       <div class="method__line"><i id="method-fill"></i></div>
-      <div class="method__step"><span>01</span><h3>Analisi delle esigenze</h3><p>Ascoltiamo il Comando e studiamo il territorio.</p></div>
-      <div class="method__step"><span>02</span><h3>Progettazione</h3><p>Supporto nella definizione della soluzione più adatta.</p></div>
-      <div class="method__step"><span>03</span><h3>Installazione</h3><p>Fornitura, posa e configurazione dei dispositivi.</p></div>
-      <div class="method__step"><span>04</span><h3>Manutenzione</h3><p>Assistenza tecnica per mantenere tutto efficiente.</p></div>
-      <div class="method__step"><span>05</span><h3>Gestione operativa</h3><p>Dal back office al front end, ogni giorno.</p></div>
+      <div class="method__step"><span>01</span><h3>Analisi delle esigenze</h3><p>Partiamo dalle esigenze del cliente.</p></div>
+      <div class="method__step"><span>02</span><h3>Progettazione</h3><p>Supporto in fase di progettazione.</p></div>
+      <div class="method__step"><span>03</span><h3>Installazione</h3><p>Installazione dei dispositivi.</p></div>
+      <div class="method__step"><span>04</span><h3>Manutenzione</h3><p>Manutenzione dei dispositivi e supporto tecnico.</p></div>
+      <div class="method__step"><span>05</span><h3>Gestione operativa</h3><p>Gestione operativa, dal back office al front end.</p></div>
     </div>
   </div>
 </section>
@@ -355,7 +418,7 @@
     <div class="contact__copy">
       <p class="eyebrow">Hai bisogno di una consulenza?</p>
       <h2 class="contact__title split">Parliamone.</h2>
-      <p>Raccontaci cosa vuoi migliorare sul tuo territorio. Ti aiutiamo a trovare la soluzione più adatta.</p>
+      <p>Offriamo consulenza e supporto alle amministrazioni locali, per garantire un servizio continuativo di sicurezza stradale.</p>
       <dl class="contact__list">
         <div><dt>Sede</dt><dd><a href="https://maps.google.com/?q=Via+del+Gonfalone+3,+20123+Milano" target="_blank" rel="noopener">Via del Gonfalone 3<br>20123 Milano, Italia</a></dd></div>
         <div><dt>Telefono</dt><dd><a href="tel:+390240042393">+39 02 4004 2393</a></dd></div>
@@ -401,7 +464,7 @@
     </div>
     <div class="footer__bottom">
       <span>© 2026 HYPNOS Srl · Tutti i diritti riservati</span>
-      <span>C.F. e P.IVA 10682130967 · REA MI-2550012</span>
+      <span>Partita IVA 10682130967 · REA MI-2550012</span>
       <a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">Privacy</a>
     </div>
   </div>

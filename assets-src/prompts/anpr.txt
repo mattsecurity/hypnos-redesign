@@ -1,5 +1,6 @@
 Formato: landscape 1536x1024.
-Soggetto: fotografia editoriale di una telecamera professionale per lettura targhe (ANPR) montata su un palo in acciaio zincato con braccio, sopra uno spartitraffico di un viale urbano italiano all'ora blu. La telecamera ha custodia antracite opaca, tettuccio parasole, vetro frontale scuro e un anello di LED infrarossi con un debole bagliore rosso. Accanto un piccolo illuminatore IR.
-Inquadratura: ripresa dal basso a tre quarti, teleobiettivo, telecamera nitida nel terzo destro, sfondo con viale e scie luminose di auto completamente sfocato (bokeh caldo dei fanali).
-Stile: fotografia di prodotto industriale reale, premium, cinematografica, tonalità blu fredde con accenti caldi.
-Vincoli: nessun testo, nessun marchio, nessun logo, nessuna filigrana.
+Soggetto: telecamera professionale per lettura targhe (ANPR) installata su un palo in acciaio zincato con braccio orizzontale sopra lo spartitraffico di un viale di Milano, all'ora blu. Custodia compatta in alluminio grigio grafite con tettuccio parasole, vetro frontale scuro, accanto un illuminatore a infrarossi rettangolare con LED che emettono un debolissimo bagliore rosso. Cavi fissati al palo con fascette, bulloni, piccola scatola di giunzione. Sotto, il viale con aiuola e due corsie di auto con fari accesi.
+Inquadratura: teleobiettivo 135mm f/2, ripresa leggermente dal basso a tre quarti, telecamera perfettamente a fuoco nel terzo destro, sfondo con palazzi milanesi e fanali completamente sfocati in un bokeh caldo e morbido.
+Luce: cielo blu profondo residuo del tramonto, lampioni al sodio che illuminano di caldo il lato del palo.
+Stile: vera fotografia documentaria/editoriale scattata con full-frame (Sony A7R IV o Canon R5) e obiettivo fisso, NON un render 3D, NON CGI, NON illustrazione. Micro-imperfezioni reali: polvere, graffi leggeri, macchie di pioggia asciutte sul metallo, asfalto usurato, grana fine del sensore, piccola aberrazione cromatica ai bordi, bilanciamento del bianco naturale. Proporzioni e scale fisicamente corrette.
+Vincoli: nessun logo, nessun marchio, nessuna filigrana, nessuna persona riconoscibile, nessuna targa leggibile.

@@ -10,8 +10,10 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
   2. zoom zenitale sull'auto (mirino HUD);
   3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico, passaggio alle spalle della telecamera con profondità di campo;
   4. "flash" e passaggio nel feed della telecamera: rilevamento veicolo, box targa, ritaglio targa, OCR carattere per carattere;
-  5. verifiche: classe, colore, velocità, RCA, revisione, veicoli rubati, ZTL, transito registrato.
-- **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (pianta animata con stalli e occupazione), servizio integrato verbali (flusso a 5 fasi), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
+  5. dal transito al gestionale: targa, velocità rilevata, punto di controllo, transito registrato (solo dati illustrativi).
+- **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (`js/parking.js`: strada vista dall'alto in canvas, fissata allo scroll nelle 5 fasi fornitura → installazione → segnaletica → manutenzione → gestione, poi auto che parcheggiano ed escono in retromarcia), servizio integrato verbali (`js/pipeline.js`: pannello fissato allo scroll con 5 scene: apparecchiature, controllo velocità, gestione dei verbali, software, supporto), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
+- **Contenuti**: tutti i testi riprendono solo quanto dichiarato su https://www.hypnosweb.it; numeri, targhe e schermate sono illustrativi e segnalati come tali.
+- **Menu**: i link portano direttamente alla sezione (velo di transizione, nessuno scorrimento lungo).
 
 ## Anteprima locale
 

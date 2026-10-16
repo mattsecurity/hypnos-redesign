@@ -1,5 +1,6 @@
 Formato: landscape 1536x1024.
-Soggetto: fotografia reale di un parcometro moderno grigio antracite con piccolo pannello solare e display, su un marciapiede di Milano, accanto a stalli di sosta delimitati da strisce blu sull'asfalto e auto parcheggiate. Via milanese con facciate classiche, alberi, luce dorata del mattino.
-Inquadratura: tre quarti, parcometro nitido in primo piano a destra, sfondo sfocato con bokeh.
-Stile: fotografia editoriale reale, premium, colori naturali e caldi.
-Vincoli: nessun testo leggibile, nessun logo, nessuna filigrana, nessuna persona riconoscibile, nessuna targa leggibile.
+Soggetto: parcometro moderno su un marciapiede di Milano: colonnina in metallo verniciato grigio antracite con piccolo pannello solare inclinato in cima, display LCD spento, tastierino, lettore di carte contactless e fessura monete, adesivo istruzioni generico illeggibile. Accanto stalli di sosta delimitati da strisce blu sull'asfalto con auto parcheggiate (targhe non leggibili), alberi del viale, facciate milanesi in stile liberty.
+Inquadratura: 85mm f/1.8 ad altezza d'uomo, parcometro nitido nel terzo destro, sfondo con bokeh morbido.
+Luce: mattino presto dorato, ombre lunghe degli alberi sul marciapiede.
+Stile: vera fotografia documentaria/editoriale scattata con full-frame (Sony A7R IV o Canon R5) e obiettivo fisso, NON un render 3D, NON CGI, NON illustrazione. Micro-imperfezioni reali: polvere, graffi leggeri, macchie di pioggia asciutte sul metallo, asfalto usurato, grana fine del sensore, piccola aberrazione cromatica ai bordi, bilanciamento del bianco naturale. Proporzioni e scale fisicamente corrette.
+Vincoli: nessun logo, nessun marchio, nessuna filigrana, nessuna persona riconoscibile, nessuna targa leggibile.

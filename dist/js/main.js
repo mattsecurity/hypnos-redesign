@@ -1,5 +1,7 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
 import { createStory } from './story.js';
+import { initParking } from './parking.js';
+import { initPipeline } from './pipeline.js';
 
 const { gsap, ScrollTrigger } = window;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -26,11 +28,23 @@ if (!reduced && window.Lenis) {
   gsap.ticker.add(t => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
 }
+// menu links jump straight to the section (no long scroll through the whole page):
+// a short veil hides the cut, the page lands on the target and the veil lifts
+const veil = document.createElement('div'); veil.className = 'jump-veil'; document.body.appendChild(veil);
 const scrollTo = target => {
   const el = typeof target === 'string' ? $(target) : target;
   if (!el) return;
-  if (lenis) lenis.scrollTo(el, { offset: 0, duration: 1.6, easing: t => 1 - Math.pow(1 - t, 4) });
-  else el.scrollIntoView({ behavior: reduced ? 'auto' : 'smooth' });
+  const y = el === document.body ? 0 : el.getBoundingClientRect().top + scrollY;
+  const land = () => {
+    if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y);
+    ScrollTrigger.update();
+    if (story) { const { p } = storyProgress(); story.jump(p); }
+  };
+  if (reduced) { land(); return; }
+  gsap.timeline()
+    .to(veil, { opacity: 1, duration: .22, ease: 'power2.in' })
+    .add(land)
+    .to(veil, { opacity: 0, duration: .45, ease: 'power2.out', delay: .05 });
 };
 $$('a[href^="#"]').forEach(a => a.addEventListener('click', e => {
   const id = a.getAttribute('href');
@@ -293,7 +307,7 @@ function sectionMotion() {
     gsap.from(lines, { yPercent: 110, duration: 1.2, stagger: .09, ease: 'power4.out', scrollTrigger: { trigger: h, start: 'top 86%' } });
   });
   // eyebrows / paragraphs fade
-  $$('section:not(.story) .eyebrow, .solutions__intro, .parking__copy > p, .pipeline__head p, .software__copy > p, .company__main > p, .contact__copy > p, .manifesto__pills, .kpis, .audience, .tributi, .contact__list, .form')
+  $$('section:not(.story) .eyebrow, .solutions__intro, .parking__intro > p, .pipeline__head p, .software__copy > p, .company__main > p, .contact__copy > p, .manifesto__pills, .kpis, .audience, .tributi, .contact__list, .form')
     .forEach(el => gsap.from(el, { y: 26, opacity: 0, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
 
   // manifesto: words light up with scroll
@@ -330,23 +344,10 @@ function sectionMotion() {
     return () => { hs.style.overflowX = ''; };
   });
 
-  // parking photo reveal + parallax
-  gsap.fromTo('.parking__photo', { clipPath: 'inset(18% 18% 18% 18% round 24px)' }, { clipPath: 'inset(0% 0% 0% 0% round 24px)', ease: 'none', scrollTrigger: { trigger: '.parking__visual', start: 'top 90%', end: 'center 55%', scrub: true } });
-  gsap.fromTo('.parking__photo img', { yPercent: -8 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: '.parking__visual', start: 'top bottom', end: 'bottom top', scrub: true } });
-  gsap.from('#parking-list li', { x: -20, opacity: 0, duration: .9, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: '#parking-list', start: 'top 85%' } });
-  gsap.from('.parking__plan', { y: 60, opacity: 0, duration: 1.2, ease: 'power3.out', scrollTrigger: { trigger: '.parking__visual', start: 'top 60%' } });
-  parkingPlan();
-
-  // pipeline: line draws, steps light up
-  const steps = $$('.flow__step');
-  ScrollTrigger.create({
-    trigger: '#flow', start: 'top 75%', end: 'bottom 45%', scrub: .6,
-    onUpdate: s => {
-      $('#flow-prog').style.strokeDashoffset = String(1000 - s.progress * 1000);
-      steps.forEach((st, i) => st.classList.toggle('on', s.progress >= i / (steps.length - 1) - .02 || (isMobile() && s.progress > i / steps.length)));
-    },
-  });
-  gsap.fromTo('.pipeline__bg img', { yPercent: -10 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: '.pipeline', start: 'top bottom', end: 'bottom top', scrub: true } });
+  // parking: living street simulation, pinned through the five phases
+  initParking({ gsap, ScrollTrigger, isMobile, reduced });
+  // pipeline: one event followed from detection to reporting
+  initPipeline({ gsap, ScrollTrigger });
 
   // software dashboard
   gsap.from('#dash', { y: 90, rotateX: 10, opacity: 0, transformPerspective: 1400, duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: '#dash', start: 'top 85%' } });
@@ -355,52 +356,6 @@ function sectionMotion() {
   // method progress
   gsap.fromTo('#method-fill', { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '#method', start: 'top 75%', end: 'bottom 60%', scrub: .6 } });
   gsap.from('.method__step', { y: 40, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '#method', start: 'top 80%' } });
-}
-
-/* parking plan: stalls draw, cars arrive & leave */
-function parkingPlan() {
-  const svg = $('#parking-plan');
-  const NS = 'http://www.w3.org/2000/svg';
-  const stalls = svg.querySelector('.pl-stalls');
-  const carsG = svg.querySelector('.pl-cars');
-  const n = 9, x0 = 40, w = 58, y0 = 70, h = 92;
-  for (let i = 0; i <= n; i++) {
-    const l = document.createElementNS(NS, 'line');
-    l.setAttribute('x1', x0 + i * w); l.setAttribute('x2', x0 + i * w); l.setAttribute('y1', y0); l.setAttribute('y2', y0 + h);
-    l.style.strokeDasharray = h; l.style.strokeDashoffset = h; stalls.appendChild(l);
-  }
-  const top = document.createElementNS(NS, 'line');
-  top.setAttribute('x1', x0); top.setAttribute('x2', x0 + n * w); top.setAttribute('y1', y0 + h); top.setAttribute('y2', y0 + h);
-  top.style.strokeDasharray = n * w; top.style.strokeDashoffset = n * w; stalls.appendChild(top);
-  const cars = [];
-  for (let i = 0; i < n; i++) {
-    // real top-down cars (generated), nose in or out at random
-    const r = document.createElementNS(NS, 'g');
-    const LEN = [4.0, 4.8, 4.5, 4.8, 4.2, 4.6];           // metres, per model
-    const model = i % 6;
-    const ch = (h - 12) * LEN[model] / 4.8, cw = ch * .52, cx = x0 + i * w + (w - cw) / 2, cy = y0 + 6 + (h - 12 - ch) / 2;
-    const flip = (i * 7) % 3 === 0;
-    r.innerHTML = `<image href="assets/img/cars/car-${model + 1}.webp" x="${cx}" y="${cy}" width="${cw}" height="${ch}" preserveAspectRatio="xMidYMid meet"${flip ? ` transform="rotate(180 ${cx + cw / 2} ${cy + ch / 2})"` : ''}/>`;
-    r.style.opacity = 0;
-    carsG.appendChild(r); cars.push({ el: r, on: false });
-  }
-  const occ = $('#pl-occ');
-  const setOcc = () => { occ.textContent = `OCCUPAZIONE ${Math.round(cars.filter(c => c.on).length / n * 100)}%`; };
-  const arrive = (c, d = 0) => { c.on = true; gsap.fromTo(c.el, { opacity: 0, y: -60 }, { opacity: 1, y: 0, duration: .9, delay: d, ease: 'power3.out', onStart: setOcc }); };
-  const leave = c => { c.on = false; gsap.to(c.el, { opacity: 0, y: -60, duration: .8, ease: 'power2.in', onComplete: setOcc }); };
-  let timer = null;
-  ScrollTrigger.create({
-    trigger: svg, start: 'top 85%', once: true,
-    onEnter: () => {
-      gsap.to($$('line', stalls), { strokeDashoffset: 0, duration: .9, stagger: .06, ease: 'power2.inOut' });
-      [0, 1, 3, 4, 6, 8].forEach((i, k) => arrive(cars[i], .8 + k * .15));
-      timer = setInterval(() => {
-        if (document.hidden) return;
-        const c = cars[Math.floor(Math.random() * n)];
-        c.on ? leave(c) : arrive(c);
-      }, 1700);
-    },
-  });
 }
 
 /* live dashboard rows */
@@ -421,8 +376,7 @@ function liveDashboard() {
     t += 1;
     const now = new Date();
     const li = document.createElement('li');
-    const warn = Math.random() < .12;
-    li.innerHTML = `<span>${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}</span><span>${plate()}</span><span>${rnd(gates)}</span><span class="st${warn ? ' warn' : ''}">${warn ? 'Verifica' : 'Regolare'}</span>`;
+    li.innerHTML = `<span>${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}</span><span>${plate()}</span><span>${rnd(gates)}</span><span class="st">Registrato</span>`;
     list.prepend(li);
     while (list.children.length > 10) list.lastChild.remove();
     count += 1 + Math.floor(Math.random() * 3);
