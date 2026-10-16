@@ -1,0 +1,11 @@
+Formato: landscape 1536x1024.
+Soggetto: fotografia da drone perfettamente zenitale (camera puntata dritta verso il basso, nessuna prospettiva) di una via residenziale di Milano a mezzogiorno, la strada corre orizzontale da sinistra a destra e attraversa tutta l'immagine.
+Composizione esatta dall'alto verso il basso:
+- fascia superiore (circa 14% dell'altezza): tetti in coppi e cornicioni di palazzi milanesi, visti esattamente dall'alto;
+- marciapiede superiore (circa 16%): lastre di graniglia grigio chiaro, quattro platani con chioma ampia su aiuole quadrate, cordolo in granito chiaro netto e dritto sul bordo inferiore;
+- corsia di sosta (circa 20%): asfalto scuro VUOTO, senza alcuna striscia né segnaletica, nessuna auto;
+- due corsie di marcia (circa 28%): asfalto scuro con una sola linea bianca tratteggiata al centro, nessuna auto;
+- cordolo in granito dritto, marciapiede inferiore (circa 12%) con lastre di graniglia e tre platani;
+- fascia inferiore (circa 10%): tetti e cornicioni.
+Le chiome degli alberi NON devono coprire la carreggiata. Luce naturale morbida, ombre corte e realistiche degli alberi, asfalto con texture e piccole riparazioni realistiche, colori naturali.
+Vera fotografia, NON render 3D, NON illustrazione. Nessun logo, nessun marchio, nessuna scritta, nessuna filigrana, nessuna persona, nessuna targa leggibile.

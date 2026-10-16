@@ -1,14 +1,19 @@
-// HYPNOS — "La sosta, chiavi in mano": a living top-down street drawn on canvas.
-// Scroll drives the five phases (supply → install → road markings → maintenance → management);
-// once the service is "live" cars keep arriving, parking, reversing out and driving away.
+// HYPNOS — "La sosta, chiavi in mano".
+// Scroll story: the parking meter seen from the front → the camera rises to a drone view of the street →
+// installation → road markings are painted → maintenance van → the managed street comes alive.
+// Street: a real top-down photograph (assets/img/parking-street.webp); stalls, meter, cars and van are drawn on top.
 
-const W = 40, H = 25;                       // world, metres (16:10)
-const STALLS = 16, STALL_W = 2.5;
-const CURB_N = 8.5, STALL_Y = 11.0, LANE_A = 15.25, LANE_B = 18.75, CURB_S = 20.5;
-const METER = { x: 20.0, y: 7.55 };
-const CAR_L = 4.3;
+const W = 40, H = 40 * 1024 / 1536;          // world, metres (photo is 1536×1024 at 38.4 px/m)
+const CURB_N = 8.83, CURB_S = 20.68, DASH_Y = 16.98;
+const STALL_D = 4.4, EDGE_Y = CURB_N + STALL_D; // angled (45°) stalls between the north kerb and EDGE_Y
+const LANE_A = (EDGE_Y + DASH_Y) / 2, LANE_B = (DASH_Y + CURB_S) / 2;
+const SPAN = 2.5 / Math.SQRT1_2;               // stall spacing along the kerb for 2.5 m wide stalls at 45°
+const METER = { x: 20.6, y: 7.75 };
+const ANG = -Math.PI / 4;                       // parked heading: nose towards the kerb, pointing north-east
+const DIR = { x: Math.cos(ANG), y: Math.sin(ANG) };
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const range = (p, a, b) => clamp((p - a) / (b - a));
+const lerp = (a, b, t) => a + (b - a) * t;
 const ease = t => t * t * (3 - 2 * t);
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const easeIO = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
@@ -17,7 +22,7 @@ const bezD = (a, b, c, d, t) => { const u = 1 - t; return 3 * u * u * (b - a) + 
 const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
 const euro = v => '€ ' + v.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
-export async function initParking({ gsap, ScrollTrigger, isMobile, reduced }) {
+export async function initParking({ gsap, ScrollTrigger, reduced }) {
   const root = document.getElementById('sosta');
   if (!root) return;
   const canvas = root.querySelector('#pk-canvas');
@@ -26,109 +31,57 @@ export async function initParking({ gsap, ScrollTrigger, isMobile, reduced }) {
   const ui = {
     occ: root.querySelector('#pk-occ'), occBar: root.querySelector('#pk-occbar'), rev: root.querySelector('#pk-rev'),
     free: root.querySelector('#pk-free'), toasts: root.querySelector('#pk-toasts'), phase: root.querySelector('#pk-phase'),
-    photo: root.querySelector('#pk-photo'), hud: root.querySelector('.pk-hud'), install: root.querySelector('#pk-install'),
+    front: root.querySelector('#pk-front'), hud: root.querySelector('.pk-hud'), install: root.querySelector('#pk-install'),
+    note: root.querySelector('.pk-note'),
   };
 
   // pin first (synchronously), so every ScrollTrigger below this section is measured with the pin spacer
   let P = 0;
   const mm = gsap.matchMedia();
   mm.add('(min-width: 961px)', () => {
-    const st = ScrollTrigger.create({
-      trigger: '.parking__pin', pin: true, start: 'top top', end: '+=260%', scrub: true,
-      onUpdate: s => { P = s.progress * 1.02; },
-    });
+    const st = ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=300%', scrub: true, onUpdate: s => { P = s.progress * 1.02; } });
     return () => st.kill();
   });
   mm.add('(max-width: 960px)', () => {
-    // no pin on small screens: the phases play by themselves once the stage is in view
+    // no pin on small screens: the story plays by itself once the stage is in view
     let t0 = null;
     const st = ScrollTrigger.create({ trigger: '.pk-view', start: 'top 75%', onEnter: () => { t0 = performance.now(); } });
-    const tick = () => { if (t0 !== null) P = Math.min(1.02, (performance.now() - t0) / 14000); };
+    const tick = () => { if (t0 !== null) P = Math.min(1.02, (performance.now() - t0) / 16000); };
     gsap.ticker.add(tick);
     return () => { st.kill(); gsap.ticker.remove(tick); };
   });
-  const [asphalt, paving, veg, aerial, ...carImgs] = await Promise.all([
-    loadImg('assets/tex/asphalt_diff.jpg'), loadImg('assets/tex/pavement_diff.jpg'), loadImg('assets/tex/median-veg.webp'), loadImg('assets/img/aerial.webp'),
+
+  const [street, van, ...carImgs] = await Promise.all([
+    loadImg('assets/img/parking-street.webp'), loadImg('assets/img/van-top.webp'),
     ...[1, 2, 3, 4, 5, 6].map(i => loadImg(`assets/img/cars/car-${i}.webp`)),
   ]);
 
   /* ---------- sizing ---------- */
-  let S = 20, dpr = 1, cw = 0, chh = 0;
-  const bg = document.createElement('canvas'); const bgx = bg.getContext('2d');
+  let S = 20, dpr = 1;
   function resize() {
     const r = canvas.getBoundingClientRect();
     dpr = Math.min(devicePixelRatio || 1, 2);
-    cw = Math.max(320, r.width); chh = cw * H / W;
-    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(chh * dpr);
+    const cw = Math.max(320, r.width);
+    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(cw * H / W * dpr);
     S = cw / W;
-    bg.width = canvas.width; bg.height = canvas.height;
-    paintStatic();
   }
 
-  /* ---------- static street (cached) ---------- */
-  const trees = [3.2, 11.4, 28.6, 36.8].map((x, i) => ({ x, y: 5.6, r: 2.9 + (i % 2) * .4, rot: i * 1.7 }))
-    .concat([6.5, 16.5, 26.5, 35].map((x, i) => ({ x, y: 22.6, r: 2.7 + (i % 2) * .35, rot: i * 2.3 + 1 })));
-  function pattern(img, metres, tint) {
-    if (!img) return tint;
-    const p = bgx.createPattern(img, 'repeat');
-    const k = metres * S * dpr / img.width;
-    p.setTransform(new DOMMatrix().scale(k, k));
-    return p;
+  /* ---------- stalls (45°, nose to the kerb) ---------- */
+  const STALLS = [];
+  for (let i = 0; ; i++) {
+    const x0 = .9 + i * SPAN;                       // where the stall's left line meets the lane edge
+    const cx = x0 + SPAN / 2 + STALL_D / 2, cy = (CURB_N + EDGE_Y) / 2;
+    if (x0 + SPAN + STALL_D > W - .3) break;
+    STALLS.push({ i, x0, cx, cy, car: null, reserved: false });
   }
-  function paintStatic() {
-    const g = bgx; const k = S * dpr;
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    // buildings: real roofs from the aerial photo (north strip) with an eave shadow
-    if (aerial) {
-      g.drawImage(aerial, 380, 0, 1000, 140, 0, 0, W * k, 4 * k);
-      g.drawImage(aerial, 380, 880, 1000, 144, 0, 23 * k, W * k, 2 * k);
-    } else { g.fillStyle = '#8a5a44'; g.fillRect(0, 0, W * k, 4 * k); g.fillRect(0, 23 * k, W * k, 2 * k); }
-    // pavements
-    g.fillStyle = pattern(paving, 1.8, '#b9b2a6'); g.fillRect(0, 4 * k, W * k, (CURB_N - 4) * k); g.fillRect(0, CURB_S * k, W * k, (23 - CURB_S) * k);
-    g.fillStyle = 'rgba(255,240,215,.08)'; g.fillRect(0, 4 * k, W * k, (CURB_N - 4) * k);
-    let gr = g.createLinearGradient(0, 4 * k, 0, 4.9 * k); gr.addColorStop(0, 'rgba(0,0,0,.35)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gr; g.fillRect(0, 4 * k, W * k, .9 * k);
-    gr = g.createLinearGradient(0, 23 * k, 0, 22.2 * k); gr.addColorStop(0, 'rgba(0,0,0,.3)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
-    g.fillStyle = gr; g.fillRect(0, 22.2 * k, W * k, .8 * k);
-    // asphalt (parking strip + lanes)
-    g.fillStyle = pattern(asphalt, 3.2, '#55575b'); g.fillRect(0, CURB_N * k, W * k, (CURB_S - CURB_N) * k);
-    g.fillStyle = 'rgba(30,32,38,.45)'; g.fillRect(0, CURB_N * k, W * k, (CURB_S - CURB_N) * k);
-    // tyre polish along the lanes
-    for (const y of [LANE_A - .8, LANE_A + .8, LANE_B - .8, LANE_B + .8]) { g.fillStyle = 'rgba(0,0,0,.08)'; g.fillRect(0, (y - .3) * k, W * k, .6 * k); }
-    // granite kerbs
-    for (const y of [CURB_N, CURB_S]) {
-      g.fillStyle = '#d9d6cf'; g.fillRect(0, (y - .15) * k, W * k, .3 * k);
-      g.fillStyle = 'rgba(0,0,0,.25)'; g.fillRect(0, (y + (y === CURB_N ? .15 : -.21)) * k, W * k, .06 * k);
-      for (let x = 0; x < W; x += 1) { g.fillStyle = 'rgba(0,0,0,.18)'; g.fillRect(x * k, (y - .15) * k, .03 * k, .3 * k); }
-    }
-    // lane markings
-    g.fillStyle = 'rgba(245,245,240,.9)';
-    for (let x = .5; x < W; x += 4.5) g.fillRect(x * k, (17 - .06) * k, 3 * k, .12 * k);
-    // tree pits + canopies (boxwood photo tile as a dense canopy, with a soft drop shadow)
-    for (const t of trees) {
-      g.fillStyle = 'rgba(60,45,35,.9)'; g.fillRect((t.x - .7) * k, (t.y - .7) * k, 1.4 * k, 1.4 * k);
-    }
-    for (const t of trees) {
-      g.save(); g.translate(t.x * k, t.y * k); g.rotate(t.rot);
-      g.shadowColor = 'rgba(10,20,10,.45)'; g.shadowBlur = 1.2 * k; g.shadowOffsetX = .6 * k; g.shadowOffsetY = .7 * k;
-      // plane-tree canopy: the leaf cut-out darkened to a mature summer green, with a lit crown
-      g.filter = 'brightness(.62) saturate(.8) contrast(1.1)';
-      if (veg) g.drawImage(veg, 0, 0, 1024, 1024, -t.r * k, -t.r * k, 2 * t.r * k, 2 * t.r * k);
-      g.filter = 'none'; g.shadowColor = 'transparent';
-      if (veg) { g.globalAlpha = .55; g.rotate(1.3); g.drawImage(veg, 0, 0, 1024, 1024, -t.r * .62 * k, -t.r * .7 * k, 1.25 * t.r * k, 1.25 * t.r * k); g.globalAlpha = 1; }
-      else { g.fillStyle = '#3d6b35'; g.beginPath(); g.arc(0, 0, t.r * k, 0, 7); g.fill(); }
-      g.restore();
-    }
-  }
+  const NS = STALLS.length;
 
-  /* ---------- dynamic actors ---------- */
-  const stallX = i => STALL_W * (i + .5);
-  const stalls = Array.from({ length: STALLS }, (_, i) => ({ i, x: stallX(i), car: null, reserved: false }));
-  const carsLive = [];       // management-phase cars (park / leave)
-  const through = [];        // through traffic on lane B
-  let sim = 0, revenue = 0, lastSpawn = 0, lastThrough = 0, populated = false;
+  /* ---------- actors ---------- */
+  const cars = [];
+  let sim = 0, revenue = 0, lastA = -9, lastB = -9, populated = false;
+  const pick = () => carImgs[(Math.random() * carImgs.length) | 0];
+  function mk(o) { const img = pick(); return Object.assign({ img, len: 4.05 + Math.random() * .3, x: 0, y: 0, h: 0, v: 0, t: 0, brake: 0, rev: 0 }, o); }
 
-  function newCar(img) { const im = img || carImgs[(Math.random() * carImgs.length) | 0]; return { img: im, len: CAR_L * (.92 + Math.random() * .14), x: -6, y: LANE_A, h: 0, brake: 0, rev: 0, state: 'approach', t: 0 }; }
   function toast(html) {
     const el = document.createElement('div'); el.className = 'pk-toast'; el.innerHTML = html;
     ui.toasts.prepend(el);
@@ -136,212 +89,285 @@ export async function initParking({ gsap, ScrollTrigger, isMobile, reduced }) {
     gsap.to(el, { opacity: 0, y: 8, duration: .5, delay: 3.2, ease: 'power2.in', onComplete: () => el.remove() });
     while (ui.toasts.children.length > 3) ui.toasts.lastChild.remove();
   }
-  function parkTarget() {
-    const free = stalls.filter(s => !s.car && !s.reserved);
-    if (!free.length) return null;
-    return free[(Math.random() * free.length) | 0];
-  }
-  function spawnParker() {
-    if (carsLive.some(c => c.state === 'approach' || c.state === 'in')) return;  // one manoeuvre at a time on lane A
-    const s = parkTarget(); if (!s) return;
-    const c = newCar(); c.stall = s; s.reserved = true; carsLive.push(c);
+  function hud() {
+    const occ = STALLS.filter(s => s.car && s.car.state === 'parked').length;
+    ui.occ.textContent = Math.round(occ / NS * 100) + '%';
+    ui.occBar.style.transform = `scaleX(${occ / NS})`;
+    ui.free.textContent = String(NS - occ);
+    ui.rev.textContent = euro(revenue);
   }
   function populate() {
     if (populated) return; populated = true;
-    [1, 2, 4, 6, 7, 10, 12, 13].forEach(i => {
-      const c = newCar(); const s = stalls[i];
-      Object.assign(c, { x: s.x, y: STALL_Y, h: -Math.PI / 2, state: 'parked', stall: s, stay: 2 + Math.random() * 10 });
-      s.car = c; carsLive.push(c);
+    [1, 3, 4, 7, 9].forEach(i => {
+      const s = STALLS[i]; if (!s) return;
+      const c = mk({ state: 'parked', stall: s, x: s.cx, y: s.cy, h: ANG, stay: 3 + Math.random() * 10 });
+      s.car = c; cars.push(c);
     });
-  }
-  function hudUpdate() {
-    const occ = stalls.filter(s => s.car && s.car.state === 'parked').length;
-    ui.occ.textContent = Math.round(occ / STALLS * 100) + '%';
-    ui.occBar.style.transform = `scaleX(${occ / STALLS})`;
-    ui.free.textContent = String(STALLS - occ);
-    ui.rev.textContent = euro(revenue);
+    hud();
   }
 
-  function stepCars(dt, live) {
-    // management phase: arrivals & departures
+  // a car occupies lane A if its body reaches into it
+  const inLaneA = o => (o.state === 'approach' || o.state === 'pass' || o.state === 'exit') || ((o.state === 'in' || o.state === 'out') && o.y > EDGE_Y - .6);
+  // distance to the nearest obstacle ahead on lane A (eastbound) for car c
+  function gapAheadA(c) {
+    let g = 99;
+    for (const o of cars) {
+      if (o === c) continue;
+      let ox = null;
+      if (inLaneA(o)) ox = o.x;
+      if (o.state === 'out') ox = Math.min(o.x, o.stall.cx - 5.6);   // a reversing car claims its exit spot
+      if (ox === null || ox <= c.x) continue;
+      g = Math.min(g, ox - c.x - (c.len + o.len) / 2 - 1.4);
+    }
+    return g;
+  }
+  function gapAheadB(c) {
+    let g = 99;
+    for (const o of cars) if (o !== c && o.state === 'through' && o.x < c.x) g = Math.min(g, c.x - o.x - (c.len + o.len) / 2 - 1.6);
+    return g;
+  }
+  const follow = (c, vmax, gap, dt, accel = 4) => {
+    const vt = Math.max(0, Math.min(vmax, gap * 1.4));
+    c.brake = vt < c.v - .3 ? 1 : 0;
+    c.v = vt < c.v ? Math.max(vt, c.v - 9 * dt) : Math.min(vt, c.v + accel * dt);
+    return c.v;
+  };
+
+  function step(dt, live) {
+    // spawns: lane A parkers / passers when the entrance is clear, lane B through traffic
+    // lane A entrance must be free — including the spot a reversing car is about to back into
+    const clearEntryA = !cars.some(o => (inLaneA(o) && o.x < 6) || (o.state === 'out' && o.stall.cx - 5.6 < 8));
     if (live) {
       populate();
-      if (sim - lastSpawn > 2.4 + Math.random() * 2) { lastSpawn = sim; spawnParker(); }
-    }
-    for (let k = carsLive.length - 1; k >= 0; k--) {
-      const c = carsLive[k]; const s = c.stall;
-      c.t += dt;
-      if (c.state === 'approach') {
-        const ex = s.x - 5.6;
-        const v = 8 * clamp((ex - c.x) / 6, .3, 1);
-        c.x = Math.min(ex, c.x + v * dt); c.y = LANE_A; c.h = 0; c.brake = (ex - c.x) < 6 ? 1 : 0;
-        if (c.x >= ex - 1e-3) { c.state = 'in'; c.t = 0; }
-      } else if (c.state === 'in') {
-        const T = 2.4, u = easeIO(clamp(c.t / T));
-        const P0x = s.x - 5.6, P1x = s.x - 2.6, P2x = s.x, P3x = s.x, P0y = LANE_A, P1y = LANE_A, P2y = STALL_Y + 2.8, P3y = STALL_Y;
-        c.x = bez(P0x, P1x, P2x, P3x, u); c.y = bez(P0y, P1y, P2y, P3y, u);
-        c.h = Math.atan2(bezD(P0y, P1y, P2y, P3y, Math.max(u, .001)), bezD(P0x, P1x, P2x, P3x, Math.max(u, .001)));
-        c.brake = u > .7 ? 1 : .3;
-        if (c.t >= T) {
-          c.state = 'parked'; c.t = 0; c.stay = 5 + Math.random() * 9; c.brake = 0; s.car = c; s.reserved = false;
-          const mins = [30, 45, 60, 90, 120][(Math.random() * 5) | 0], eur = mins / 60 * 1.6;
-          revenue += eur;
-          toast(`<i></i><b>Stallo ${String(s.i + 1).padStart(2, '0')}</b><span>Sosta pagata al parcometro · ${mins >= 60 ? (mins / 60).toString().replace('.', ',') + ' h' : mins + ' min'}</span>`);
-          hudUpdate();
-        }
-      } else if (c.state === 'parked') {
-        c.h = -Math.PI / 2; c.x = s.x; c.y = STALL_Y;
-        if (live && c.t > c.stay && !carsLive.some(o => o !== c && (o.state === 'out' || (o.state === 'in' && Math.abs(o.stall.x - s.x) < 7)))) { c.state = 'out'; c.t = 0; hudUpdate(); }
-      } else if (c.state === 'out') {
-        // reverse out to the left, then pull away eastwards
-        const T = 2.6, u = easeIO(clamp(c.t / T));
-        const P0x = s.x, P1x = s.x, P2x = s.x - 2.0, P3x = s.x - 4.4, P0y = STALL_Y, P1y = STALL_Y + 2.4, P2y = LANE_A, P3y = LANE_A;
-        c.x = bez(P0x, P1x, P2x, P3x, u); c.y = bez(P0y, P1y, P2y, P3y, u);
-        const dx = bezD(P0x, P1x, P2x, P3x, Math.max(u, .001)), dy = bezD(P0y, P1y, P2y, P3y, Math.max(u, .001));
-        c.h = Math.atan2(-dy, -dx); c.rev = 1; c.brake = u > .85 ? 1 : 0;
-        if (c.t >= T) { c.state = 'exit'; c.t = 0; c.rev = 0; s.car = null; c.vx = 0; hudUpdate(); }
-      } else if (c.state === 'exit') {
-        c.vx = Math.min(9, (c.vx || 0) + 4 * dt); c.x += c.vx * dt; c.h = 0; c.brake = 0;
-        if (c.x > W + 6) carsLive.splice(k, 1);
+      if (sim - lastA > 2.2 + Math.random() * 1.6 && clearEntryA) {
+        lastA = sim;
+        const free = STALLS.filter(s => !s.car && !s.reserved);
+        if (free.length && Math.random() < .8) {
+          const s = free[(Math.random() * free.length) | 0]; s.reserved = true;
+          cars.push(mk({ state: 'approach', stall: s, x: -5, y: LANE_A, h: 0, v: 8 }));
+        } else cars.push(mk({ state: 'pass', x: -5, y: LANE_A, h: 0, v: 9 }));
       }
     }
-    // through traffic, westbound
-    if (sim - lastThrough > 3 + Math.random() * 3.5) { lastThrough = sim; through.push({ ...newCar(), x: W + 6, y: LANE_B, h: Math.PI, v: 9 + Math.random() * 3 }); }
-    for (let k = through.length - 1; k >= 0; k--) { const c = through[k]; c.x -= c.v * dt; if (c.x < -7) through.splice(k, 1); }
+    if (sim - lastB > 2.6 + Math.random() * 2.6 && !cars.some(o => o.state === 'through' && o.x > W - 3)) {
+      lastB = sim; cars.push(mk({ state: 'through', x: W + 5, y: LANE_B, h: Math.PI, v: 9 + Math.random() * 2 }));
+    }
+
+    for (let k = cars.length - 1; k >= 0; k--) {
+      const c = cars[k]; const s = c.stall;
+      c.t += dt;
+      switch (c.state) {
+        case 'through': {
+          follow(c, 10, gapAheadB(c), dt); c.x -= c.v * dt;
+          if (c.x < -7) cars.splice(k, 1);
+          break;
+        }
+        case 'pass': case 'exit': {
+          follow(c, c.state === 'exit' ? 8.5 : 9.5, gapAheadA(c), dt, c.state === 'exit' ? 3 : 4);
+          c.x += c.v * dt; c.h = 0; c.rev = 0;
+          if (c.x > W + 7) cars.splice(k, 1);
+          break;
+        }
+        case 'approach': {
+          const ex = s.cx - 6.2;                                   // turn-in point
+          const g = Math.min(gapAheadA(c), ex - c.x + .01);
+          follow(c, 8, g, dt);
+          c.x = Math.min(ex, c.x + c.v * dt);
+          if (ex - c.x < 7) c.brake = 1;
+          // start turning only if nobody is reversing out right next to the stall
+          if (c.x >= ex - .02 && !cars.some(o => o !== c && (o.state === 'out' || o.state === 'in') && Math.abs(o.stall.cx - s.cx) < SPAN * 1.6)) { c.state = 'in'; c.t = 0; }
+          break;
+        }
+        case 'in': {
+          const T = 2.6, u = easeIO(clamp(c.t / T));
+          const P0x = s.cx - 6.2, P1x = s.cx - 3.2, P2x = s.cx - DIR.x * 2.6, P3x = s.cx;
+          const P0y = LANE_A, P1y = LANE_A, P2y = s.cy - DIR.y * 2.6, P3y = s.cy;
+          c.x = bez(P0x, P1x, P2x, P3x, u); c.y = bez(P0y, P1y, P2y, P3y, u);
+          const uu = Math.max(u, .002);
+          c.h = Math.atan2(bezD(P0y, P1y, P2y, P3y, uu), bezD(P0x, P1x, P2x, P3x, uu));
+          c.brake = u > .65 ? 1 : .4;
+          if (c.t >= T) {
+            c.state = 'parked'; c.t = 0; c.stay = 5 + Math.random() * 9; c.brake = 0; c.h = ANG; s.car = c; s.reserved = false;
+            const mins = [30, 45, 60, 90, 120][(Math.random() * 5) | 0];
+            revenue += mins / 60 * 1.5;
+            toast(`<i></i><b>Stallo ${String(s.i + 1).padStart(2, '0')}</b><span>Sosta pagata al parcometro · ${mins >= 60 ? (mins / 60).toString().replace('.', ',') + ' h' : mins + ' min'}</span>`);
+            hud();
+          }
+          break;
+        }
+        case 'parked': {
+          c.x = s.cx; c.y = s.cy; c.h = ANG; c.brake = 0;
+          // leave only with a clear lane behind and no manoeuvre next door
+          if (live && c.t > c.stay) {
+            const busy = cars.some(o => o !== c && (
+              (inLaneA(o) && o.x > s.cx - 16 && o.x < s.cx + 1.5) ||
+              ((o.state === 'in' || o.state === 'out') && Math.abs(o.stall.cx - s.cx) < SPAN * 2.2)));
+            if (!busy) { c.state = 'out'; c.t = 0; hud(); }
+          }
+          break;
+        }
+        case 'out': {
+          // reverse out (backwards, down-left) onto lane A facing east, then drive away
+          const T = 2.8, u = easeIO(clamp(c.t / T));
+          const P0x = s.cx, P1x = s.cx - DIR.x * 2.4, P2x = s.cx - 3.6, P3x = s.cx - 5.6;
+          const P0y = s.cy, P1y = s.cy - DIR.y * 2.4, P2y = LANE_A, P3y = LANE_A;
+          c.x = bez(P0x, P1x, P2x, P3x, u); c.y = bez(P0y, P1y, P2y, P3y, u);
+          const uu = Math.max(u, .002);
+          c.h = Math.atan2(-bezD(P0y, P1y, P2y, P3y, uu), -bezD(P0x, P1x, P2x, P3x, uu));
+          c.rev = 1; c.brake = u > .82 ? 1 : 0;
+          if (u > .35 && s.car === c) { s.car = null; }
+          if (c.t >= T) { c.state = 'exit'; c.t = 0; c.v = 0; c.rev = 0; hud(); }
+          break;
+        }
+      }
+    }
   }
 
   /* ---------- drawing ---------- */
-  function drawCar(g, c, k, alpha = 1) {
+  function drawCar(g, c, k) {
     if (!c.img) return;
     const len = c.len, wid = len * c.img.width / c.img.height;
-    g.save(); g.globalAlpha = alpha;
+    g.save();
     g.translate(c.x * k, c.y * k); g.rotate(c.h + Math.PI / 2);
-    g.shadowColor = 'rgba(0,0,0,.42)'; g.shadowBlur = .55 * k; g.shadowOffsetX = .25 * k; g.shadowOffsetY = .35 * k;
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = .5 * k; g.shadowOffsetX = .3 * k; g.shadowOffsetY = .35 * k;
     g.drawImage(c.img, -wid / 2 * k, -len / 2 * k, wid * k, len * k);
     g.shadowColor = 'transparent';
-    // brake / reverse lights
-    if (c.brake || c.rev) {
+    const glow = Math.max(c.brake, c.rev);
+    if (glow) {
       g.globalCompositeOperation = 'lighter';
       for (const sx of [-.32, .32]) {
         const gx = sx * wid * k, gy = len / 2 * k * .96;
         const rg = g.createRadialGradient(gx, gy, 0, gx, gy, .7 * k);
         const col = c.rev ? '255,255,240' : '255,40,30';
-        rg.addColorStop(0, `rgba(${col},${.55 * Math.max(c.brake, c.rev)})`); rg.addColorStop(1, `rgba(${col},0)`);
+        rg.addColorStop(0, `rgba(${col},${.5 * glow})`); rg.addColorStop(1, `rgba(${col},0)`);
         g.fillStyle = rg; g.fillRect(gx - .7 * k, gy - .7 * k, 1.4 * k, 1.4 * k);
       }
       g.globalCompositeOperation = 'source-over';
     }
     g.restore();
   }
-  function drawVan(g, x, y, k, hazard) {
-    const L = 5.2, Wd = 2.1;
-    g.save(); g.translate(x * k, y * k);
-    g.shadowColor = 'rgba(0,0,0,.42)'; g.shadowBlur = .6 * k; g.shadowOffsetX = .25 * k; g.shadowOffsetY = .35 * k;
-    g.fillStyle = '#f4f5f7'; roundRect(g, -L / 2 * k, -Wd / 2 * k, L * k, Wd * k, .35 * k); g.fill();
+  function drawVan(g, x, y, k, beacon) {
+    if (!van) return;
+    const L = 5.4, Wd = L * van.width / van.height;
+    g.save(); g.translate(x * k, y * k); g.rotate(Math.PI / 2);
+    g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = .6 * k; g.shadowOffsetX = .35 * k; g.shadowOffsetY = -.3 * k;
+    g.drawImage(van, -Wd / 2 * k, -L / 2 * k, Wd * k, L * k);
     g.shadowColor = 'transparent';
-    g.fillStyle = '#20252c'; roundRect(g, (L / 2 - 1.35) * k, -Wd / 2 * .86 * k, .55 * k, Wd * .86 * k, .12 * k); g.fill();   // windscreen
-    g.strokeStyle = 'rgba(0,0,0,.12)'; g.lineWidth = .04 * k;
-    for (let i = 0; i < 4; i++) { g.beginPath(); g.moveTo((-L / 2 + .5 + i * .8) * k, -Wd / 2 * .7 * k); g.lineTo((-L / 2 + .5 + i * .8) * k, Wd / 2 * .7 * k); g.stroke(); }
-    g.fillStyle = '#e25861'; g.fillRect(-L / 2 * k, -.12 * k, (L - 1.5) * k, .24 * k);                                        // livery stripe
-    g.fillStyle = hazard ? '#ffb020' : '#a36a10'; g.beginPath(); g.arc((L / 2 - 1.75) * k, 0, .16 * k, 0, 7); g.fill();          // beacon
-    if (hazard) { g.globalCompositeOperation = 'lighter'; const rg = g.createRadialGradient((L / 2 - 1.75) * k, 0, 0, (L / 2 - 1.75) * k, 0, 1.6 * k); rg.addColorStop(0, 'rgba(255,170,30,.6)'); rg.addColorStop(1, 'rgba(255,170,30,0)'); g.fillStyle = rg; g.fillRect((L / 2 - 3.4) * k, -1.6 * k, 3.2 * k, 3.2 * k); g.globalCompositeOperation = 'source-over'; }
+    if (beacon) {
+      g.globalCompositeOperation = 'lighter';
+      const by = -L * .2 * k;
+      const rg = g.createRadialGradient(0, by, 0, 0, by, 2.4 * k); rg.addColorStop(0, 'rgba(255,160,20,.55)'); rg.addColorStop(1, 'rgba(255,160,20,0)');
+      g.fillStyle = rg; g.fillRect(-2.4 * k, by - 2.4 * k, 4.8 * k, 4.8 * k);
+      g.globalCompositeOperation = 'source-over';
+    }
     g.restore();
   }
-  function drawMeter(g, k, appear, active, t) {
-    if (appear <= 0) return;
-    const drop = (1 - easeOut(appear)) * 3;
-    const sc = .6 + .4 * easeOut(appear);
-    g.save(); g.translate(METER.x * k, (METER.y - drop) * k); g.scale(sc, sc);
-    g.shadowColor = `rgba(0,0,0,${.45 * appear})`; g.shadowBlur = (.3 + drop * .4) * k; g.shadowOffsetX = (.2 + drop * .5) * k; g.shadowOffsetY = (.25 + drop * .6) * k;
-    g.fillStyle = '#2a2f36'; roundRect(g, -.32 * k, -.22 * k, .64 * k, .44 * k, .08 * k); g.fill();
+  function drawMeter(g, k, on, t) {
+    g.save(); g.translate(METER.x * k, METER.y * k);
+    g.shadowColor = 'rgba(0,0,0,.5)'; g.shadowBlur = .25 * k; g.shadowOffsetX = .35 * k; g.shadowOffsetY = .3 * k;
+    g.fillStyle = '#25292f'; roundRect(g, -.3 * k, -.2 * k, .6 * k, .4 * k, .06 * k); g.fill();
     g.shadowColor = 'transparent';
-    g.fillStyle = '#3d5a7a'; roundRect(g, -.28 * k, -.2 * k, .56 * k, .2 * k, .04 * k); g.fill();                              // solar panel
-    g.strokeStyle = 'rgba(255,255,255,.25)'; g.lineWidth = .02 * k; for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo((-.28 + i * .14) * k, -.2 * k); g.lineTo((-.28 + i * .14) * k, 0); g.stroke(); }
-    g.fillStyle = active ? '#8fe3b0' : '#111'; g.fillRect(-.12 * k, .05 * k, .24 * k, .09 * k);                                // display
+    g.fillStyle = '#34506e'; roundRect(g, -.27 * k, -.18 * k, .54 * k, .19 * k, .03 * k); g.fill();
+    g.strokeStyle = 'rgba(255,255,255,.3)'; g.lineWidth = .015 * k;
+    for (let i = 1; i < 4; i++) { g.beginPath(); g.moveTo((-.27 + i * .135) * k, -.18 * k); g.lineTo((-.27 + i * .135) * k, .01 * k); g.stroke(); }
+    g.fillStyle = on ? '#8fe3b0' : '#0f1114'; g.fillRect(-.11 * k, .05 * k, .22 * k, .08 * k);
     g.restore();
-    if (active) {
-      const ph = (t % 1.6) / 1.6;
-      g.strokeStyle = `rgba(226,88,97,${(1 - ph) * .8})`; g.lineWidth = .08 * k;
-      g.beginPath(); g.arc(METER.x * k, METER.y * k, (.5 + ph * 1.8) * k, 0, 7); g.stroke();
+    if (on) {
+      const ph = (t % 1.8) / 1.8;
+      g.strokeStyle = `rgba(226,88,97,${(1 - ph) * .85})`; g.lineWidth = .07 * k;
+      g.beginPath(); g.arc(METER.x * k, METER.y * k, (.45 + ph * 1.6) * k, 0, 7); g.stroke();
     }
   }
-  function drawStallLines(g, k, paint) {
+  function drawStalls(g, k, paint) {
     if (paint <= 0) return;
-    g.strokeStyle = '#2f6fe0'; g.lineWidth = .13 * k; g.lineCap = 'butt';
-    const n = STALLS + 1;
+    g.save();
+    g.strokeStyle = '#2b66d9'; g.lineWidth = .12 * k; g.lineCap = 'round';
+    const n = NS + 1;
     for (let i = 0; i < n; i++) {
-      const pi = clamp(paint * (n + 3) - i * 1.0, 0, 1);
+      const pi = clamp(paint * (n + 4) - i);
       if (pi <= 0) continue;
-      const x = i * STALL_W;
-      g.globalAlpha = .92;
-      g.beginPath(); g.moveTo(x * k, (CURB_N + .25) * k); g.lineTo(x * k, (CURB_N + .25 + 4.85 * pi) * k); g.stroke();
+      const x0 = .9 + i * SPAN;
+      g.beginPath(); g.moveTo(x0 * k, (EDGE_Y - .05) * k); g.lineTo((x0 + (STALL_D - .2) * pi) * k, (EDGE_Y - .05 - (STALL_D - .2) * pi) * k); g.stroke();
     }
-    const pl = clamp(paint * 1.2 - .1);
-    g.beginPath(); g.moveTo(0, (CURB_N + 5.1) * k); g.lineTo(W * pl * k, (CURB_N + 5.1) * k); g.stroke();
-    // stall numbers + "P" pavement symbol
-    g.globalAlpha = .55 * clamp(paint * 2 - 1); g.fillStyle = '#2f6fe0'; g.font = `600 ${.55 * k}px "JetBrains Mono", monospace`; g.textAlign = 'center';
-    for (let i = 0; i < STALLS; i++) g.fillText(String(i + 1).padStart(2, '0'), stallX(i) * k, (CURB_N + 4.7) * k);
+    const pl = clamp(paint * 1.25 - .15);
+    g.beginPath(); g.moveTo(.9 * k, EDGE_Y * k); g.lineTo((.9 + (NS * SPAN) * pl) * k, EDGE_Y * k); g.stroke();
+    // stall numbers painted near the lane edge
+    g.globalAlpha = .7 * clamp(paint * 2 - 1); g.fillStyle = '#2b66d9';
+    g.font = `600 ${.5 * k}px "JetBrains Mono", monospace`; g.textAlign = 'center'; g.textBaseline = 'middle';
+    for (const s of STALLS) g.fillText(String(s.i + 1).padStart(2, '0'), (s.x0 + SPAN / 2 + .35) * k, (EDGE_Y - .45) * k);
     g.globalAlpha = 1;
-    // P sign on the pavement edge
+    g.restore();
+    // vertical sign: blue P on a pole at the kerb
     const sp = clamp(paint * 2.2 - 1.2);
     if (sp > 0) {
-      g.save(); g.translate(13 * k, 7.9 * k); g.scale(sp, sp);
-      g.shadowColor = 'rgba(0,0,0,.35)'; g.shadowBlur = .3 * k; g.shadowOffsetX = .15 * k; g.shadowOffsetY = .2 * k;
-      g.fillStyle = '#1d5bd6'; roundRect(g, -.45 * k, -.45 * k, .9 * k, .9 * k, .1 * k); g.fill();
+      g.save(); g.translate(10.6 * k, (CURB_N - .55) * k); g.scale(.4 + .6 * easeOut(sp), .4 + .6 * easeOut(sp)); g.globalAlpha = sp;
+      g.shadowColor = 'rgba(0,0,0,.45)'; g.shadowBlur = .3 * k; g.shadowOffsetX = .4 * k; g.shadowOffsetY = .35 * k;
+      g.fillStyle = '#1d5bd6'; roundRect(g, -.42 * k, -.42 * k, .84 * k, .84 * k, .08 * k); g.fill();
       g.shadowColor = 'transparent';
-      g.fillStyle = '#fff'; g.font = `700 ${.66 * k}px "Inter Tight", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', 0, .03 * k);
+      g.fillStyle = '#fff'; g.font = `700 ${.62 * k}px "Inter Tight", sans-serif`; g.textAlign = 'center'; g.textBaseline = 'middle'; g.fillText('P', 0, .03 * k);
       g.restore();
     }
   }
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
   /* ---------- phases ---------- */
-  let phaseIdx = -1;
   const PHASES = ['Fornitura', 'Installazione', 'Segnaletica', 'Manutenzione', 'Gestione'];
+  const TOASTS = ['Fornitura dei parcometri', 'Installazione del parcometro su strada', 'Segnaletica orizzontale e verticale', 'Manutenzione dei parcometri', 'Gestione con personale altamente qualificato'];
+  let phaseIdx = -1;
   function setPhase(i) {
     if (i === phaseIdx) return; phaseIdx = i;
     steps.forEach((s, k) => { s.classList.toggle('on', k === i); s.classList.toggle('done', k < i); });
     ui.phase.innerHTML = `<b>${String(i + 1).padStart(2, '0')}</b> ${PHASES[i]}`;
     root.dataset.phase = String(i);
-    if (i === 0) toast('<i></i><b>Fornitura</b><span>Fornitura dei parcometri</span>');
-    if (i === 1) toast('<i></i><b>Installazione</b><span>Installazione del parcometro su strada</span>');
-    if (i === 2) toast('<i></i><b>Segnaletica</b><span>Segnaletica orizzontale e verticale</span>');
-    if (i === 3) toast('<i></i><b>Manutenzione</b><span>Manutenzione dei parcometri</span>');
-    if (i === 4) toast('<i></i><b>Gestione</b><span>Gestione con personale altamente qualificato</span>');
-  }
-  function render(dt) {
-    const k = S * dpr;
-    const g = ctx;
-    g.setTransform(1, 0, 0, 1, 0, 0);
-    g.drawImage(bg, 0, 0);
-    const pMeter = range(P, .02, .14), pInst = range(P, .2, .36), pPaint = range(P, .4, .58), pVan = range(P, .6, .8), live = P >= .8;
-    setPhase(P < .19 ? 0 : P < .39 ? 1 : P < .59 ? 2 : P < .8 ? 3 : 4);
-    drawStallLines(g, k, pPaint);
-    // install progress chip
-    ui.install.style.opacity = String(pInst > 0 && pInst < 1 ? 1 : 0);
-    ui.install.querySelector('i').style.transform = `scaleX(${pInst})`;
-    ui.photo.classList.toggle('on', P < .3);
-    ui.hud.classList.toggle('on', live);
-    // cars
-    stepCars(dt, live);
-    for (const c of through) drawCar(g, c, k);
-    for (const c of carsLive) drawCar(g, c, k, live ? 1 : 0);
-    // maintenance van: drives in, stops by the meter with the beacon on, leaves
-    if (pVan > 0 && pVan < 1) {
-      const a = easeOut(range(pVan, 0, .35)), b = easeIO(range(pVan, .7, 1));
-      const vx = -4 + (METER.x - 1.2 + 4) * a + (W + 8 - METER.x + 1.2) * b;
-      drawVan(g, vx, LANE_A - .2, k, pVan > .3 && pVan < .75 && (sim % .8) < .4);
-      // technician + wrench pulse while stopped
-      if (pVan > .35 && pVan < .7) {
-        const tw = ease(range(pVan, .35, .45)) * (1 - ease(range(pVan, .6, .7)));
-        g.fillStyle = '#e25861'; g.beginPath(); g.arc((METER.x + .7) * k, (METER.y + .6 + (1 - tw) * 3.5) * k, .32 * k, 0, 7); g.fill();
-        g.fillStyle = '#fff'; g.beginPath(); g.arc((METER.x + .7) * k, (METER.y + .6 + (1 - tw) * 3.5) * k, .15 * k, 0, 7); g.fill();
-      }
-    }
-    drawMeter(g, k, pMeter, pInst > .02, sim);
+    if (i > 0) toast(`<i></i><b>${PHASES[i]}</b><span>${TOASTS[i]}</span>`);
   }
 
-  /* ---------- loop & scroll ---------- */
+  function render(dt) {
+    const g = ctx, k = S * dpr;
+    const rise = easeIO(range(P, .1, .27));            // front photo → drone
+    const pInst = range(P, .28, .42), pPaint = range(P, .44, .6), pVan = range(P, .62, .8), live = P >= .8;
+    setPhase(P < .27 ? 0 : P < .43 ? 1 : P < .61 ? 2 : P < .8 ? 3 : 4);
+
+    // camera: starts low over the meter and climbs to the full street
+    const z = lerp(3.4, 1, rise);
+    const ax = lerp(W / 2, METER.x, rise), ay = lerp(H * .62, METER.y, rise);
+    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.fillStyle = '#5b5e62'; g.fillRect(0, 0, canvas.width, canvas.height);
+    g.setTransform(z, 0, 0, z, (ax - METER.x * z) * k, (ay - METER.y * z) * k);
+    if (street) g.drawImage(street, 0, 0, W * k, H * k);
+    canvas.style.filter = rise < 1 ? `blur(${(1 - rise) * 3}px)` : '';
+
+    // front photo of the meter flies up and away as the camera rises
+    const f = ui.front;
+    f.style.opacity = String(1 - ease(range(rise, .35, .85)));
+    f.style.transform = `perspective(1100px) translateY(${-rise * 18}%) rotateX(${rise * 38}deg) scale(${1 + rise * .55})`;
+    f.style.visibility = rise >= .999 ? 'hidden' : 'visible';
+
+    drawStalls(g, k, pPaint);
+    ui.install.style.opacity = String(pInst > 0 && pInst < 1 ? 1 : 0);
+    ui.install.querySelector('i').style.transform = `scaleX(${pInst})`;
+    ui.hud.classList.toggle('on', live);
+
+    step(dt, live);
+    for (const c of cars) if (live || c.state === 'through') drawCar(g, c, k);
+
+    // maintenance van: arrives on lane A, stops by the meter with the beacon on, then leaves
+    if (pVan > 0 && pVan < 1) {
+      const a = easeOut(range(pVan, 0, .35)), b = easeIO(range(pVan, .7, 1));
+      const vx = lerp(lerp(-5, METER.x - .5, a), W + 7, b);
+      drawVan(g, vx, LANE_A, k, pVan > .3 && pVan < .75 && (sim % .7) < .38);
+      if (pVan > .36 && pVan < .7) {
+        // technician at the meter
+        const tw = ease(range(pVan, .36, .45)) * (1 - ease(range(pVan, .6, .7)));
+        const tx = METER.x + .7, ty = lerp(LANE_A - 1.6, METER.y + .45, tw);
+        g.fillStyle = 'rgba(0,0,0,.35)'; g.beginPath(); g.ellipse((tx + .12) * k, (ty + .12) * k, .3 * k, .22 * k, 0, 0, 7); g.fill();
+        g.fillStyle = '#f2a516'; g.beginPath(); g.ellipse(tx * k, ty * k, .3 * k, .22 * k, 0, 0, 7); g.fill();
+        g.fillStyle = '#2b2f36'; g.beginPath(); g.arc(tx * k, ty * k, .12 * k, 0, 7); g.fill();
+      }
+    }
+    drawMeter(g, k, rise > .5 && P > .28, sim);
+  }
+
+  /* ---------- loop ---------- */
   let running = false, last = 0;
   function frame(now) {
     if (!running) return;
@@ -351,9 +377,8 @@ export async function initParking({ gsap, ScrollTrigger, isMobile, reduced }) {
   }
   const start = () => { if (running) return; running = true; last = performance.now(); requestAnimationFrame(frame); };
   const stop = () => { running = false; };
-  resize(); hudUpdate(); render(0);
+  resize(); hud(); setPhase(0); render(0);
   addEventListener('resize', () => { resize(); render(0); });
   ScrollTrigger.create({ trigger: root, start: 'top bottom', end: 'bottom top', onToggle: s => (s.isActive ? start() : stop()) });
-
   if (reduced) P = 1.02;
 }

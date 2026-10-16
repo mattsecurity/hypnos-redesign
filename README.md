@@ -11,7 +11,7 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
   3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico, passaggio alle spalle della telecamera con profondità di campo;
   4. "flash" e passaggio nel feed della telecamera: rilevamento veicolo, box targa, ritaglio targa, OCR carattere per carattere;
   5. dal transito al gestionale: targa, velocità rilevata, punto di controllo, transito registrato (solo dati illustrativi).
-- **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (`js/parking.js`: strada vista dall'alto in canvas, fissata allo scroll nelle 5 fasi fornitura → installazione → segnaletica → manutenzione → gestione, poi auto che parcheggiano ed escono in retromarcia), servizio integrato verbali (`js/pipeline.js`: pannello fissato allo scroll con 5 scene: apparecchiature, controllo velocità, gestione dei verbali, software, supporto), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
+- **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (`js/parking.js`: si parte dalla foto frontale del parcometro e la camera sale fino alla vista drone di una via vera (`parking-street.webp`); scorrendo: installazione, stalli blu a 45° dipinti, furgone di manutenzione, poi auto che parcheggiano ed escono in retromarcia con distanze di sicurezza e precedenze), servizio integrato verbali (`js/pipeline.js`: pannello fissato allo scroll con 5 scene: apparecchiature, controllo velocità, gestione dei verbali, software, supporto), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
 - **Contenuti**: tutti i testi riprendono solo quanto dichiarato su https://www.hypnosweb.it; numeri, targhe e schermate sono illustrativi e segnalati come tali.
 - **Menu**: i link portano direttamente alla sezione (velo di transizione, nessuno scorrimento lungo).
 
@@ -37,7 +37,7 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 
 ## Immagini generate (Codex image_gen)
 
-Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Auto viste dall'alto della pianta sosta (`assets/img/cars/`, 6 modelli con sfondo trasparente). Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
+Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Sosta: `pk-street` (vista drone della via), `pk-front` (parcometro frontale), `pk-van2` (furgone dall'alto su fondo verde, scontornato in `van-top.webp`). Auto viste dall'alto della pianta sosta (`assets/img/cars/`, 6 modelli con sfondo trasparente). Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
 
 ## Asset di terze parti
 
