@@ -14,14 +14,16 @@ export function initPipeline({ gsap, ScrollTrigger }) {
   const $ = s => root.querySelector(s), $$ = s => [...root.querySelectorAll(s)];
   const scenes = $$('.pv-scene');
   const steps = $$('#pv-steps li');
-  const fill = $('#pv-fill');
   const status = $('#pv-status');
+  // phone: one caption under the dots instead of five wrapped labels
+  const cap = $('#pv-cap'), capN = $('#pv-cap-n'), capT = $('#pv-cap-t'), capD = $('#pv-cap-d');
+  let capActive = 0;
   const STATUS = ['Apparecchiature', 'Controllo velocità', 'Verbali', 'Software', 'Supporto'];
 
   // 1 · equipment
   const gear = $$('.pv-gear figure'), modes = $$('.pv-modes span');
   // 2 · speed check (illustrative)
-  const box = $('.pv-box'), gauge = $('#pv-gauge'), speed = $('#pv-speed'), facts = $$('.pv-facts p'), tag = $('.pv-tag'), time = $('.pv-time');
+  const frame = $('.pv-frame'), carBox = $('.pv-box--car'), plateBox = $('.pv-box--plate'), lens = $('.pv-lens'), ocr = $('#pv-ocr'), gauge = $('#pv-gauge'), speed = $('#pv-speed'), facts = $$('.pv-facts p'), tag = $('.pv-tag'), time = $('.pv-time');
   // 3 · ticket (illustrative)
   const doc = $('.pv-doc'), fields = $$('.pv-doc dd');
   const qr = $('#pv-qr'); const qrCells = [];
@@ -61,8 +63,18 @@ export function initPipeline({ gsap, ScrollTrigger }) {
       sc.style.transform = `translateY(${(1 - inn) * 26 - out * 18}px) scale(${.985 + .015 * v})`;
     });
     steps.forEach((li, i) => { li.classList.toggle('on', i === active); li.classList.toggle('done', i < active); });
-    fill.style.transform = `scaleY(${clamp(p / 4.4)})`;
+    steps.forEach((li, i) => {
+      li.style.setProperty('--seg', ease(range(p, i + .55, i + 1)).toFixed(4));
+      li.style.setProperty('--sp', i === active ? clamp(p - i, 0, 1).toFixed(4) : 0);
+    });
     status.textContent = STATUS[active];
+    if (active !== capActive) {
+      capActive = active;
+      capN.textContent = `0${active + 1} / 05`;
+      capT.textContent = steps[active].querySelector('b').textContent;
+      capD.textContent = steps[active].querySelector('span').textContent;
+      cap.classList.remove('swap'); void cap.offsetWidth; cap.classList.add('swap');
+    }
     status.classList.toggle('ok', active >= 2);
 
     // 1 · equipment: three device photos deal in, then rental / sale / management
@@ -72,15 +84,25 @@ export function initPipeline({ gsap, ScrollTrigger }) {
     });
     modes.forEach((m, i) => { const t = range(p, .45 + i * .1, .58 + i * .1); m.style.opacity = t; m.style.transform = `translateY(${(1 - easeOut(t)) * 12}px)`; });
 
-    // 2 · speed check
-    const lock = easeOut(range(p, 1.02, 1.3));
-    box.style.opacity = lock; box.style.transform = `scale(${1.6 - .6 * lock})`;
+    // 2 · speed check: vehicle detected → plate located → plate read → speed measured
+    frame.style.transform = `scale(${1.02 + .08 * ease(range(p, .95, 1.75))})`;
+    const lock = easeOut(range(p, 1.02, 1.24));
+    carBox.style.opacity = lock; carBox.style.transform = `scale(${1.25 - .25 * lock})`;
+    const pl = easeOut(range(p, 1.24, 1.4));
+    plateBox.style.opacity = pl; plateBox.style.transform = `scale(${1.8 - .8 * pl})`;
+    const ln = back(range(p, 1.34, 1.52));
+    lens.style.opacity = clamp(ln * 1.4); lens.style.transform = `translateY(${(1 - ln) * 14}px) scale(${.9 + .1 * ln})`;
+    lens.style.setProperty('--scan', `${-100 + 200 * range(p, 1.42, 1.72)}%`);
+    const PLATE = 'GM 471 KX', nc = Math.round(PLATE.length * range(p, 1.46, 1.72));
+    const read = PLATE.slice(0, nc) + (nc < PLATE.length ? (nc > 0 ? '▍' : '') : '');
+    if (ocr.textContent !== read) ocr.textContent = read;
+    ocr.style.color = nc === PLATE.length ? 'var(--ok)' : '#fff';
     const v = Math.round(82 * easeOut(range(p, 1.12, 1.6)));
     speed.textContent = v;
     gauge.style.strokeDashoffset = String(157 * (1 - v / 140));
     gauge.style.stroke = v > 70 ? 'var(--accent)' : '#ffffff';
-    facts.forEach((f, i) => { const t = range(p, 1.35 + i * .12, 1.5 + i * .12); f.style.opacity = t; f.style.transform = `translateX(${(1 - easeOut(t)) * 16}px)`; });
-    tag.style.opacity = range(p, 1.05, 1.2); time.style.opacity = range(p, 1.2, 1.35);
+    facts.forEach((f, i) => { const t = range(p, 1.5 + i * .14, 1.64 + i * .14); f.style.opacity = t; f.style.transform = `translateX(${(1 - easeOut(t)) * 16}px)`; });
+    tag.style.opacity = range(p, 1.0, 1.15); time.style.opacity = range(p, 1.15, 1.3);
 
     // 3 · ticket: sheet rises, fields type in, code builds
     const up = easeOut(range(p, 1.9, 2.15));
@@ -107,10 +129,20 @@ export function initPipeline({ gsap, ScrollTrigger }) {
 
   const proxy = { p: 0 };
   render(0);
-  gsap.to(proxy, {
+  const tween = gsap.to(proxy, {
     p: 4.8, ease: 'none',
     scrollTrigger: { trigger: root.querySelector('.pipeline__pin'), pin: true, start: 'top top', end: '+=430%', scrub: .7 },
     onUpdate: () => render(proxy.p),
+  });
+  // steps are shortcuts: jump to the moment where that scene has fully played in
+  const st = tween.scrollTrigger;
+  steps.forEach((li, i) => {
+    const go = () => {
+      const y = st.start + (st.end - st.start) * Math.min(i + .62, 4.6) / 4.8;
+      window.__lenis ? window.__lenis.scrollTo(y, { duration: 1.2 }) : window.scrollTo({ top: y, behavior: 'smooth' });
+    };
+    li.addEventListener('click', go);
+    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
   });
   gsap.fromTo(root.querySelector('.pipeline__bg img'), { yPercent: -10 }, { yPercent: 0, ease: 'none', scrollTrigger: { trigger: root, start: 'top bottom', end: 'bottom top', scrub: true } });
   gsap.from('#pv-panel', { y: 70, opacity: 0, duration: 1.3, ease: 'power3.out', scrollTrigger: { trigger: root, start: 'top 70%' } });

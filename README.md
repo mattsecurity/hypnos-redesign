@@ -37,7 +37,7 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 
 ## Immagini generate (Codex image_gen)
 
-Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Sosta: `pk-street` (vista drone della via), `pk-front` (parcometro frontale), `pk-van2` (furgone dall'alto su fondo verde, scontornato in `van-top.webp`). Auto viste dall'alto della pianta sosta (`assets/img/cars/`, 6 modelli con sfondo trasparente). Foto: vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
+Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Sosta: `pk-street` (vista drone della via), `pk-front` (parcometro frontale), `pk-van2` (furgone dall'alto su fondo verde, scontornato in `van-top.webp`). Auto viste dall'alto della pianta sosta (`assets/img/cars/`, 6 modelli con sfondo trasparente). Foto: rilevamento velocità con targa fittizia leggibile (`speed-shot`, scena 2 del fascicolo verbali), vista aerea, LOD aerea, telecamera ANPR, autovelox, Tutor, varco ZTL, parcometro, sala operativa. Sono immagini illustrative, non foto dei prodotti commercializzati. Targa, velocità ed esiti dei controlli sono fittizi.
 
 ## Asset di terze parti
 

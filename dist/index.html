@@ -237,11 +237,11 @@
   <div class="parking__pin">
     <div class="wrap parking__stage">
       <ol class="pk-steps">
-        <li><i>01</i><div><b>Fornitura</b><span>Fornitura dei parcometri.</span></div></li>
-        <li><i>02</i><div><b>Installazione</b><span>Installazione dei parcometri su strada.</span></div></li>
-        <li><i>03</i><div><b>Segnaletica</b><span>Realizzazione della segnaletica orizzontale e verticale.</span></div></li>
-        <li><i>04</i><div><b>Manutenzione</b><span>Manutenzione dei parcometri.</span></div></li>
-        <li><i>05</i><div><b>Gestione</b><span>Gestione con personale altamente qualificato.</span></div></li>
+        <li tabindex="0"><i>01</i><div><b>Fornitura</b><span>Fornitura dei parcometri.</span></div></li>
+        <li tabindex="0"><i>02</i><div><b>Installazione</b><span>Installazione dei parcometri su strada.</span></div></li>
+        <li tabindex="0"><i>03</i><div><b>Segnaletica</b><span>Realizzazione della segnaletica orizzontale e verticale.</span></div></li>
+        <li tabindex="0"><i>04</i><div><b>Manutenzione</b><span>Manutenzione dei parcometri.</span></div></li>
+        <li tabindex="0"><i>05</i><div><b>Gestione</b><span>Gestione con personale altamente qualificato.</span></div></li>
       </ol>
       <div class="pk-view">
         <canvas id="pk-canvas" aria-label="Simulazione illustrativa di una via con stalli di sosta a pagamento"></canvas>
@@ -277,11 +277,11 @@
           <li><i>03</i><b>Gestione dei verbali</b><span>Il servizio integrato dei verbali generati dal servizio.</span></li>
           <li><i>04</i><b>Software</b><span>Software per la gestione della sicurezza stradale.</span></li>
           <li><i>05</i><b>Supporto continuativo</b><span>Affiancamento professionale alla pubblica amministrazione.</span></li>
-          <em class="pv-rail"><em id="pv-fill"></em></em>
         </ol>
+        <div class="pv-cap" id="pv-cap" aria-live="polite"><p><small id="pv-cap-n">01 / 05</small><b id="pv-cap-t">Apparecchiature</b></p><span id="pv-cap-d">Tutor, autovelox e ZTL in noleggio e/o vendita.</span></div>
       </div>
       <div class="pv-panel" id="pv-panel" aria-label="Esempio illustrativo del flusso di gestione di un evento">
-        <div class="pv-bar"><span class="pv-dots"><i></i><i></i><i></i></span><span>Fascicolo evento · <b id="pv-id">EV-26-0418</b></span><span class="pv-status" id="pv-status">Apparecchiature</span></div>
+        <div class="pv-bar"><span class="pv-dots"><i></i><i></i><i></i></span><span class="pv-bar__id">Fascicolo<span class="pv-bar__x"> evento</span> · <b id="pv-id">EV-26-0418</b></span><span class="pv-status" id="pv-status">Apparecchiature</span></div>
         <div class="pv-body">
           <!-- 1. Apparecchiature -->
           <div class="pv-scene" data-s="0">
@@ -295,14 +295,18 @@
           <!-- 2. Controllo della velocità -->
           <div class="pv-scene" data-s="1">
             <div class="pv-shot">
-              <img src="assets/img/tutor.webp" alt="" loading="lazy">
-              <span class="pv-box"></span>
+              <div class="pv-frame" style="--car-x:49.8%;--car-y:49.6%;--car-w:41%;--car-h:54%;--pl-x:49.93%;--pl-y:65.58%;--pl-w:12.2%;--pl-h:5.6%">
+                <img src="assets/img/speed-shot.webp" alt="" loading="lazy">
+                <span class="pv-box pv-box--car"><em>Veicolo</em></span>
+                <span class="pv-box pv-box--plate"></span>
+              </div>
               <span class="pv-tag">Controllo della velocità · simulazione</span>
               <span class="pv-time" id="pv-time">16/10/2026 · 18:42:07</span>
             </div>
             <div class="pv-meter">
               <div class="pv-gauge"><svg viewBox="0 0 120 70"><path d="M10 64 A50 50 0 0 1 110 64" class="g-bg"/><path d="M10 64 A50 50 0 0 1 110 64" class="g-val" id="pv-gauge"/></svg><b id="pv-speed">0</b><span>km/h rilevati</span></div>
-              <div class="pv-facts"><p><span>Limite (esempio)</span><b>70 km/h</b></p><p><span>Targa</span><b class="pv-plate">GM 471 KX</b></p></div>
+              <div class="pv-lens"><div class="pv-lens__crop"><img src="assets/img/speed-shot.webp" alt="" loading="lazy"></div><p><span>Lettura targa</span><b class="pv-ocr" id="pv-ocr"></b></p></div>
+              <div class="pv-facts"><p><span>Limite (esempio)</span><b>70 km/h</b></p><p><span>Esito</span><b class="pv-verdict">Oltre il limite</b></p></div>
             </div>
           </div>
           <!-- 3. Gestione dei verbali -->
