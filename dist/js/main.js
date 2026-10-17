@@ -90,8 +90,10 @@ const setLoad = p => {
   loaderPct.textContent = `${Math.round(loadP * 100)}%`;
 };
 const introTl = gsap.timeline({ paused: true })
-  .to('.loader__mark .draw', { strokeDashoffset: 0, duration: 1.5, ease: 'power3.inOut' })
-  .to('.loader__word span', { yPercent: -105, duration: .9, stagger: .05, ease: 'power4.out' }, '-=.75')
+  // the six facets of the H slide together, then the word wipes in and the orange ring spins into place
+  .from('.loader__mark .mk', { opacity: 0, x: i => [-60, 40, 70, -30, -70, 60][i], y: i => [60, -30, 50, -60, 20, -60][i], duration: 1.1, stagger: .07, ease: 'power3.out' })
+  .to('#hy-reveal-r', { attr: { width: 400 }, duration: 1, ease: 'power3.inOut' }, '-=.55')
+  .from('.loader__word .rg', { rotation: -160, scale: .4, opacity: 0, svgOrigin: '289.4 36.65', duration: 1.1, ease: 'expo.out' }, '<.35')
   .to('.loader__claim', { opacity: 1, duration: .8 }, '-=.5');
 gsap.set('.brand', { opacity: 0 });
 introTl.play();
@@ -102,7 +104,7 @@ async function outro() {
   const target = $('.brand');
   const a = logo.getBoundingClientRect();
   const b = target.getBoundingClientRect();
-  const s = b.height / a.height * 1.1;
+  const s = b.width / a.width;
   const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
   const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
   const tl = gsap.timeline();

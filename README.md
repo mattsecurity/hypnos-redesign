@@ -4,7 +4,9 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 
 ## Struttura
 
-- **Intro** — il logo originale (marchio "H" ricostruito in SVG dalla favicon ufficiale + wordmark corallo) si disegna, poi vola nella barra di navigazione.
+- **Logo** — nuovo marchio "H" a sei sfaccettature e scritta HYPNOS con la "O" ad anello arancione, ricostruiti in SVG vettoriale dai file forniti dal cliente (simboli `#hmark` e `#hword` in `index.html`; la scritta segue il colore del testo, l'anello resta arancione). Payoff: "Soluzioni integrate per città più sicure".
+- **Intro** — le sfaccettature della "H" si assemblano, la scritta si rivela e l'anello ruota in posizione, poi il logo vola nella barra di navigazione.
+- **Certificazioni** — ISO 9001, ISO 14001, ISO/IEC 27001 nella sezione Azienda e nel footer, con sigilli neutri disegnati ad hoc (non il marchio ISO, che le aziende certificate non possono usare).
 - **Sequenza 3D guidata dallo scroll** (`js/story.js`, Three.js 0.180):
   1. città dall'alto all'ora blu, auto che percorre il viale, traffico che si muove;
   2. zoom zenitale sull'auto (mirino HUD);
