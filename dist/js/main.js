@@ -399,6 +399,37 @@ function sectionMotion() {
   // method progress
   gsap.fromTo('#method-fill', { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '#method', start: 'top 75%', end: 'bottom 60%', scrub: .6 } });
   gsap.from('.method__step', { y: 40, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '#method', start: 'top 80%' } });
+
+  // certifications: cards rise, badges roll in
+  gsap.from('.certsec__intro, .certsec__foot li', { y: 26, opacity: 0, duration: 1.1, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: '.certsec', start: 'top 75%' } });
+  gsap.from('.cert', { y: 70, opacity: 0, duration: 1.2, stagger: .12, ease: 'power3.out', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
+  gsap.from('.cbadge', { rotate: -90, scale: .6, opacity: 0, duration: 1.4, stagger: .12, ease: 'back.out(1.4)', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
+  certCards();
+}
+
+/* certification cards: details open on hover (mouse) or on tap / keyboard */
+function certCards() {
+  const cards = $$('[data-cert]');
+  const set = (card, open) => {
+    card.classList.toggle('is-open', open);
+    $('.cert__more', card).setAttribute('aria-expanded', String(open));
+  };
+  for (const card of cards) {
+    $('.cert__more', card).addEventListener('click', () => {
+      const open = !card.classList.contains('is-open');
+      cards.forEach(c => set(c, false));
+      set(card, open);
+      if (open) $('.cert__close', card).focus({ preventScroll: true });
+    });
+    $('.cert__close', card).addEventListener('click', () => { set(card, false); $('.cert__more', card).focus({ preventScroll: true }); });
+    card.addEventListener('mouseleave', () => set(card, false));
+    card.addEventListener('pointermove', e => {
+      const r = card.getBoundingClientRect();
+      card.style.setProperty('--mx', `${e.clientX - r.left}px`);
+      card.style.setProperty('--my', `${e.clientY - r.top}px`);
+    });
+  }
+  addEventListener('keydown', e => { if (e.key === 'Escape') cards.forEach(c => set(c, false)); });
 }
 
 /* live dashboard rows */
