@@ -377,8 +377,9 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const meshes = []; carSrc.traverse(o => o.isMesh && meshes.push(o));
     rc.set(V(0, .44, -6), V(0, 0, 1)); let h = rc.intersectObjects(meshes, false)[0];
     platePos.front = h ? h.point.clone().add(V(0, 0, -.018)) : V(0, .44, -2.45);
-    rc.set(V(0, .66, 6), V(0, 0, -1)); h = rc.intersectObjects(meshes, false)[0];
-    platePos.back = h ? h.point.clone().add(V(0, 0, .018)) : V(0, .66, 2.45);
+    // rear: inside the boot-lid plate recess (y .715–.81), clear of the bumper that bulges out below it
+    rc.set(V(0, .763, 6), V(0, 0, -1)); h = rc.intersectObjects(meshes, false)[0];
+    platePos.back = h ? h.point.clone().add(V(0, 0, .009)) : V(0, .763, 2.33);
   }
 
   // lamp glass: white at the front, red at the back (per-vertex)
@@ -455,7 +456,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       const front = new THREE.Mesh(pg, mat); front.position.copy(platePos.front); front.rotation.y = Math.PI; car.add(front);
       const fh = new THREE.Mesh(hg, holder); fh.position.copy(platePos.front).add(V(0, 0, .008)); car.add(fh);
       const back = new THREE.Mesh(pg, mat); back.position.copy(platePos.back); car.add(back);
-      const bh = new THREE.Mesh(hg, holder); bh.position.copy(platePos.back).add(V(0, 0, -.008)); car.add(bh);
+      const bh = new THREE.Mesh(hg, holder); bh.position.copy(platePos.back).add(V(0, 0, -.0105)); car.add(bh);
       plates = { front, back };
     }
     scene.add(group);
@@ -785,11 +786,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     } else {
       // C — through the lens: ANPR feed (fixed mount, slow optical zoom)
       shot.pos.copy(lensWorld);
-      shot.look.set(POLE.x + 20, .4, CAR_Z + .25);
+      // fixed aim at the reading point: the car is ~18–22 m away while its plate is read
+      shot.look.set(POLE.x + 21.5, .4, CAR_Z + .25);
       // the pole sways a hair in the wind
       shot.look.y += wob(time * 1.3, 8) * .012; shot.look.z += wob(time * 1.1, 2) * .01;
       shot.up.set(0, 1, 0);
-      shot.fov = lerp(24, 18.5, easeIO(range(p, .64, .84)));
+      shot.fov = lerp(24, 15, easeIO(range(p, .65, .735)));             // optical zoom onto the plate as it is read
     }
   }
 
@@ -824,7 +826,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     for (const w of hero.wheels) w.rotation.x -= travelled / .34;
     // IR illuminator pulses while the plate is read: the retroreflective rear plate flares in the feed
     const ir = ease(range(p, .705, .715)) * (1 - ease(range(p, .75, .77)));
-    hero.plates.back.material.emissiveIntensity = .07 + ir * (.6 + .3 * Math.sin(clockT * 31));
+    hero.plates.back.material.emissiveIntensity = .3 + ir * (.5 + .25 * Math.sin(clockT * 31));   // plate lamp + IR flash
     // traffic loops (time-based, keeps the city alive)
     traffic.forEach((c, i) => {
       const d = c.def; const span = GW + 40;
