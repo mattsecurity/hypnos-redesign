@@ -10,8 +10,8 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 - **Sequenza 3D guidata dallo scroll** (`js/story.js`, Three.js 0.180):
   1. città dall'alto all'ora blu, auto che percorre il viale, traffico che si muove;
   2. zoom zenitale sull'auto (mirino HUD);
-  3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico (vista dall'alto col logo), giro fino alla vista frontale di tre quarti (obiettivi, LED IR, logo sul fianco) e ingresso nell'obiettivo targhe, con profondità di campo;
-  4. "flash" e passaggio nel feed della telecamera: rilevamento veicolo, box targa, ritaglio targa, OCR carattere per carattere;
+  3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico (vista dall'alto col logo), giro fino alla vista frontale di tre quarti (obiettivi, LED IR, logo sui fianchi) e ingresso nell'obiettivo targhe, con profondità di campo; intanto l'auto raggiunge il palo e gli passa sotto durante il flash;
+  4. "flash" e passaggio nel feed della telecamera, rivolta nel senso di marcia: l'auto si allontana, rilevamento veicolo, lampo IR sulla targa **posteriore**, box targa, ritaglio targa, OCR carattere per carattere;
   5. dal transito al gestionale: targa, velocità rilevata, punto di controllo, transito registrato (solo dati illustrativi).
 - **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (`js/parking.js`: Fornitura = foto del parcometro, poi dissolvenza sulla vista drone di una via vera (`parking-street.webp`); Installazione: il furgone arriva e il tecnico monta il parcometro; Segnaletica: stalli blu a 45° dipinti; Manutenzione: nuova visita del furgone; Gestione: poi auto che parcheggiano ed escono in retromarcia con distanze di sicurezza e precedenze), servizio integrato verbali (`js/pipeline.js`: pannello fissato allo scroll con 5 scene: apparecchiature, controllo velocità, gestione dei verbali, software, supporto), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
 - **Contenuti**: tutti i testi riprendono solo quanto dichiarato su https://www.hypnosweb.it; numeri, targhe e schermate sono illustrativi e segnalati come tali.
@@ -23,7 +23,7 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 python3 -m http.server 4173 --bind 127.0.0.1 --directory dist
 ```
 
-Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della sequenza; `?q=high` / `?q=low` forza la qualità.
+Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della sequenza; versione precedente (lettura della targa anteriore): branch `backup/targa-anteriore`, tag `v-targa-anteriore`; `?q=high` / `?q=low` forza la qualità.
 
 ## Tecnica della sequenza
 

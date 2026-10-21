@@ -208,7 +208,8 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
           float cone = (1. - smoothstep(.3 + a * .18, 1.1 + a * .30, abs(lat))) * step(0., along);
           float beam = cone * exp(-a / 13.) * smoothstep(0., 1.5, a);
           // twin hot-spots
-          float spots = step(0., along) * exp(-pow(a - 4.5, 2.) / 6.) * (exp(-pow(lat - .7, 2.) * 2.) + exp(-pow(lat + .7, 2.) * 2.));
+          // (far enough ahead that, seen from behind, they read as pools on the road, not as lamps on the car)
+          float spots = step(0., along) * exp(-pow(a - 7.5, 2.) / 10.) * (exp(-pow(lat - .8, 2.) * 1.6) + exp(-pow(lat + .8, 2.) * 1.6)) * .55;
           float back = -rel.x * s - 2.45;
           float tail = exp(-clamp(back, 0., 80.) / 1.2) * step(0., back) * exp(-lat * lat / .9);
           add += car.w * (vec3(1., .93, .82) * (beam * .45 + spots * .3) + vec3(.9, .05, .03) * tail * .25);
@@ -383,6 +384,13 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   // lamp glass: white at the front, red at the back (per-vertex)
   const lampMat = new THREE.MeshBasicMaterial({ vertexColors: true, toneMapped: true });
   lampMat.color.setRGB(2.6, 2.6, 2.6);
+  // lamp glass glows towards where it faces: seen from behind, headlights must not flare over the roof
+  lampMat.onBeforeCompile = sh => {
+    sh.vertexShader = sh.vertexShader.replace('#include <common>', '#include <common>\nvarying float vFacing;')
+      .replace('#include <project_vertex>', '#include <project_vertex>\nvFacing = dot(normalize(normalMatrix * normal), normalize(-mvPosition.xyz));');
+    sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nvarying float vFacing;')
+      .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(.06, 1., smoothstep(-.05, .45, vFacing));');
+  };
   const amberMat = new THREE.MeshBasicMaterial({ color: new THREE.Color(1.4, .55, .08) });
   carSrc.traverse(o => {
     if (!o.isMesh || o.material.name !== 'Gar_LXe' || o.name === 'IHL' || o.parent?.name === 'IHL') return;
@@ -414,7 +422,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
 
   function buildCar(color, withPlates) {
     const car = carSrc.clone(true);
-    const paint = new THREE.MeshPhysicalMaterial({ color, metalness: .55, roughness: .3, clearcoat: 1, clearcoatRoughness: .035, envMapIntensity: 1.35 });
+    const paint = new THREE.MeshPhysicalMaterial({ color, metalness: .55, roughness: .3, clearcoat: 1, clearcoatRoughness: .05, envMapIntensity: 1.35 });
     car.traverse(o => {
       if (!o.isMesh) return;
       if (o.userData.lamp) { o.material = lampMat; return; }
@@ -454,6 +462,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     return { group, wheels, plates, driver, dist: 0 };
   }
   const hero = buildCar(0x0a0b0d, true);
+  hero.plates.back.material = hero.plates.back.material.clone();   // own material: lit by the camera's IR flash
   const traffic = [];
   const trafficDefs = isLow
     ? [{ color: 0x8c9198, lane: ROAD.laneN1, dir: -1, speed: 13, offset: 0 }]
@@ -541,9 +550,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
 
   // ANPR unit (local +Z = lens direction, +X = south side, origin = tilt pivot on the bracket)
   const housing = buildAnprCamera(renderer);
-  // camera sits on top of the arm, looks west (−X) at incoming eastbound traffic, pitched down
+  // camera sits on top of the arm, looks east (+X) along the eastbound lanes, pitched down:
+  // it reads the rear plate of each car that has just passed under it
   housing.rotation.order = 'YXZ';
-  housing.rotation.y = -Math.PI / 2;
+  housing.rotation.y = Math.PI / 2;
   housing.rotation.x = 0.2;
   const HOUSING_POS = V(0, ARM_Y + .045, ARM_L - .3);
   housing.position.copy(HOUSING_POS);
@@ -566,7 +576,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const rubber = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: .55 });
     for (const gx of [-.03, .03]) {
       const pts = [housing.localToWorld(V(gx, .165, -.325))];
-      for (const [x, y, z] of [[gx, .13, -.405], [gx * .5 - .05, .06, -.27], [-.12, .022, -.07 + gx * .5], [-.15, .006, gx * .25]]) pts.push(mount.localToWorld(V(x, y, z)));
+      for (const [x, y, z] of [[-gx, .13, .405], [-gx * .5 - .05, .06, .27], [-.12, .022, .07 + gx * .5], [-.15, .006, -gx * .25]]) pts.push(mount.localToWorld(V(x, y, z)));
       const curve = new THREE.CatmullRomCurve3(pts.map(p => rig.worldToLocal(p)));
       rig.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, .0055, 8), rubber));
     }
@@ -654,7 +664,22 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   resize();
 
   /* ---------- choreography ---------- */
-  const carX = p => -76 + 98 * p;           // hero car moves with scroll
+  // hero car moves with scroll: steady in the aerial shots, then it catches up with the checkpoint, passes under the
+  // camera during the flash and drives away in the feed (rear plate read at ~20 m)
+  const CAR_KEYS = [[.46, -30.92], [.6, 6], [.645, 28.5], [.675, 41], [.71, 46.5], [.79, 55], [1, 72]];
+  const carSlopes = (() => {
+    const k = CAR_KEYS, d = k.slice(1).map((b, i) => (b[1] - k[i][1]) / (b[0] - k[i][0]));
+    const m = k.map((_, i) => (i === 0 ? 98 : i === k.length - 1 ? d[i - 1] : (d[i - 1] * d[i] <= 0 ? 0 : 2 / (1 / d[i - 1] + 1 / d[i]))));
+    return m;
+  })();
+  const carX = p => {
+    if (p <= CAR_KEYS[0][0]) return -76 + 98 * p;
+    const k = CAR_KEYS; let i = 0;
+    while (i < k.length - 2 && p > k[i + 1][0]) i++;
+    const [x0, y0] = k[i], [x1, y1] = k[i + 1], h = x1 - x0, t = clamp((p - x0) / h);
+    const t2 = t * t, t3 = t2 * t;   // cubic Hermite with monotone (harmonic-mean) tangents
+    return (2 * t3 - 3 * t2 + 1) * y0 + (t3 - 2 * t2 + t) * h * carSlopes[i] + (-2 * t3 + 3 * t2) * y1 + (t3 - t2) * h * carSlopes[i + 1];
+  };
   const CAR_Z = ROAD.laneS1;
   const tmpA = V(0, 0, 0), tmpB = V(0, 0, 0), up = V(0, 0, -1);
   const portrait = () => aspect < 0.9;
@@ -729,25 +754,24 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       } else if (t < .6) {
         const e = easeIO((t - .4) / .2);
         const alt = lerp(8.8, H.y + topDist(), e);
-        shot.pos.set(H.x - .25 * (1 - e) - .12 * e, alt, H.z);
+        shot.pos.set(H.x - .25 * (1 - e) + .12 * e, alt, H.z);
         shot.look.set(shot.pos.x, H.y, H.z);
-        const phi = Math.PI * e;                                  // turn around: the lens ends up pointing to the top of the frame
-        shot.up.set(Math.cos(phi), 0, Math.sin(phi));
+        shot.up.set(1, 0, 0);                                     // the lens points to the top of the frame
         frameOffset(e);
       } else {
         const u = range(t, .6, 1);
         const e1 = easeIO(range(u, 0, .55));                      // orbit from above to a front three-quarter view
         const e2 = easeIO(range(u, .72, 1));                      // then push into the plate-reading lens
-        // front = −X (towards the traffic), logo side = +Z; almost level with the window, which is pitched down
-        const front = tmpA.set(-.86, portrait() ? .14 : .1, portrait() ? .42 : .5).normalize();
+        // front = +X (direction of travel), road side = +Z; almost level with the window, which is pitched down
+        const front = tmpA.set(.9, portrait() ? .14 : .1, portrait() ? .42 : .4).normalize();
         const dir = tmpB.set(0, 1, 0).lerp(front, e1).normalize();
         shot.pos.copy(H).addScaledVector(dir, lerp(topDist(), portrait() ? 2.15 : 1.05, e1));
-        shot.pos.x -= .12 * (1 - e1);
+        shot.pos.x += .12 * (1 - e1);
         // aim between the centre and the front face: lenses, IR array and side logo in one frame
-        shot.look.copy(H); shot.look.x -= .12 + .08 * e1; shot.look.y -= .03 * e1;
-        shot.up.set(-1, 0, 0).lerp(tmpA.set(0, 1, 0), ease(range(e1, 0, .6))).normalize();
+        shot.look.copy(H); shot.look.x += .12 + .14 * e1; shot.look.y -= .03 * e1;
+        shot.up.set(1, 0, 0).lerp(tmpA.set(0, 1, 0), ease(range(e1, 0, .6))).normalize();
         shot.fov = fovDeg;
-        frameOffset(1 - e2);
+        frameOffset((1 - e2) * (1 - .45 * e1));                  // the window side stays clear of the screen edge
         if (e2 > 0) {
           shot.pos.lerp(tmpA.copy(plateLens).addScaledVector(plateAxis, .06), e2);
           shot.look.lerp(plateLens, e2);
@@ -761,7 +785,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     } else {
       // C — through the lens: ANPR feed (fixed mount, slow optical zoom)
       shot.pos.copy(lensWorld);
-      shot.look.set(POLE.x - 22, .4, CAR_Z + .25);
+      shot.look.set(POLE.x + 20, .4, CAR_Z + .25);
       // the pole sways a hair in the wind
       shot.look.y += wob(time * 1.3, 8) * .012; shot.look.z += wob(time * 1.1, 2) * .01;
       shot.up.set(0, 1, 0);
@@ -798,6 +822,9 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const travelled = hx - hero.group.position.x;
     hero.group.position.set(hx, 0, CAR_Z);
     for (const w of hero.wheels) w.rotation.x -= travelled / .34;
+    // IR illuminator pulses while the plate is read: the retroreflective rear plate flares in the feed
+    const ir = ease(range(p, .705, .715)) * (1 - ease(range(p, .75, .77)));
+    hero.plates.back.material.emissiveIntensity = .07 + ir * (.6 + .3 * Math.sin(clockT * 31));
     // traffic loops (time-based, keeps the city alive)
     traffic.forEach((c, i) => {
       const d = c.def; const span = GW + 40;
@@ -865,13 +892,14 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     }
     const flash = Math.max(0, 1 - Math.abs(p - .641) / .005);
     grade.uniforms.uFlash.value = ease(flash) * .9;
-    bloom.strength = lerp(.45, .8, feed); bloom.threshold = lerp(1.35, .92, feed);
+    // feed: a little more bloom for the IR plate flare, but lamp reflections on the bodywork must not read as lamps
+    bloom.strength = lerp(.45, .6, feed); bloom.threshold = lerp(1.35, 1.15, feed);
 
     // HUD data
     hudState.p = p;
     hudState.phase = p < .46 ? 'aerial' : p < .64 ? 'approach' : 'feed';
     hudState.carBox = projectBox(hero.group.children[0], 6);
-    hudState.plateBox = hero.plates ? projectBox(hero.plates.front, 3) : null;
+    hudState.plateBox = hero.plates ? projectBox(hero.plates.back, 3) : null;
     proj.copy(housingWorld).project(camera);
     hudState.pole = proj.z < 1 ? { x: (proj.x * .5 + .5) * W, y: (-proj.y * .5 + .5) * H } : null;
     hudState.time = clockT;
@@ -1033,6 +1061,8 @@ function buildAnprCamera(renderer) {
   top.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
   const side = add(new THREE.PlaneGeometry(.22, .22 / LOGO_ASPECT), logo, W / 2 + .0006, CY, .02);
   side.rotation.y = Math.PI / 2;
+  const side2 = add(new THREE.PlaneGeometry(.22, .22 / LOGO_ASPECT), logo, -W / 2 - .0006, CY, .02);
+  side2.rotation.y = -Math.PI / 2;
   return cam;
 }
 
