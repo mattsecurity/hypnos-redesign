@@ -224,9 +224,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(CITY.extent * 2 + 60, GH, 1, 1), groundMat);
   ground.rotation.x = -Math.PI / 2;
   scene.add(ground);
-  // dark surround beyond the photo
-  const surround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({ color: 0x141b27 }));
-  surround.rotation.x = -Math.PI / 2; surround.position.y = -0.05; scene.add(surround);
+  // dark surround beyond the photo: drawn first and without depth, so it can never z-fight with the ground
+  // (on phone GPUs the two huge, nearly coplanar quads showed as dark shards from high altitude)
+  const surround = new THREE.Mesh(new THREE.PlaneGeometry(2000, 2000), new THREE.MeshBasicMaterial({ color: 0x141b27, depthTest: false, depthWrite: false }));
+  surround.rotation.x = -Math.PI / 2; surround.position.y = -0.05; surround.renderOrder = -10; scene.add(surround);
 
   /* ---------- road furniture: curbs, crisp markings ---------- */
   const concrete = new THREE.MeshStandardMaterial({ color: 0x9a948a, roughness: .85 });
@@ -722,8 +723,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     if (shot.roll) camera.rotateZ(shot.roll);
     camera.updateMatrixWorld();
     if (Math.abs(camera.fov - shot.fov) > .01) { camera.fov = shot.fov; camera.updateProjectionMatrix(); }
-    // near plane tight when close to the housing
-    const near = p > .5 ? .02 : .3; if (camera.near !== near) { camera.near = near; camera.updateProjectionMatrix(); }
+    // near plane tight when close to the housing; in the aerial shots it scales with the altitude,
+    // which keeps the depth precision high enough for mobile GPUs
+    const near = p > .5 ? .02 : Math.max(.3, Math.round(shot.pos.y * .02 * 10) / 10);
+    if (camera.near !== near) { camera.near = near; camera.updateProjectionMatrix(); }
 
     // LOD + detail by altitude
     const alt = camera.position.y;
