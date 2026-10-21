@@ -81,15 +81,17 @@ p { margin: 0; }
 .nav__burger[aria-expanded="true"] span:last-child { transform: translateY(-3.5px) rotate(-45deg); }
 
 /* ---------------- story ---------------- */
-.story { position: relative; height: 1050vh; background: var(--paper); color: #fff; }
-.story__sticky { position: sticky; top: 0; height: 100vh; height: 100svh; overflow: hidden; background: var(--night); transform-origin: 50% 40%; will-change: transform; }
+.story { position: relative; height: 1050vh; background: var(--night); color: #fff; }
+/* the stage fills the large viewport, so the 3D scene also runs behind mobile browser toolbars (no white band
+   when they slide away); captions and HUD stay inside the small viewport, always above the toolbar */
+.story__sticky { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; background: var(--night); transform-origin: 50% 40%; will-change: transform; }
 .story__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
 .story__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
 .story.is-fallback .story__fallback { opacity: 1; }
 .story.is-fallback .story__canvas, .story.is-fallback .feed, .story.is-fallback .reticle, .story.is-fallback .target { display: none; }
 .story__shade { position: absolute; inset: 0; pointer-events: none;
   background: linear-gradient(90deg, rgba(5,7,10,.72) 0%, rgba(5,7,10,.35) 38%, rgba(5,7,10,0) 62%), linear-gradient(0deg, rgba(5,7,10,.55), rgba(5,7,10,0) 35%); }
-.chapters { position: absolute; inset: 0; pointer-events: none; }
+.chapters { position: absolute; inset: 0 0 auto; height: 100%; height: 100svh; pointer-events: none; }
 .chapter { position: absolute; left: var(--gutter); bottom: clamp(90px, 13vh, 150px); max-width: 520px; opacity: 0; will-change: opacity, transform; }
 .chapter h2 { font-size: clamp(36px, 4.6vw, 68px); margin: 16px 0 18px; }
 .chapter p:not(.eyebrow) { font-size: clamp(15px, 1.15vw, 18px); line-height: 1.55; color: rgba(255,255,255,.78); max-width: 430px; }
@@ -98,13 +100,13 @@ p { margin: 0; }
 .chapter--hero h1 { font-size: clamp(44px, 7vw, 112px); line-height: .96; margin: 22px 0 28px; letter-spacing: -.045em; }
 .chapter--hero h1 span { color: rgba(255,255,255,.55); }
 .chapter--hero .lead { max-width: 520px; font-size: clamp(16px, 1.25vw, 19px); }
-.rail { position: absolute; right: var(--gutter); top: 50%; transform: translateY(-50%); display: grid; gap: 22px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding-left: 18px; }
+.rail { position: absolute; right: var(--gutter); top: 50%; top: 50svh; transform: translateY(-50%); display: grid; gap: 22px; font: 500 11px var(--f-mono); letter-spacing: .1em; text-transform: uppercase; padding-left: 18px; }
 .rail span { opacity: .38; transition: opacity .4s, color .4s; position: relative; }
 .rail span.is-on { opacity: 1; }
 .rail span::before { content: ""; position: absolute; left: -18px; top: 50%; width: 7px; height: 7px; margin-top: -3.5px; border-radius: 50%; border: 1px solid currentColor; background: transparent; transition: background .4s; }
 .rail span.is-on::before { background: var(--accent); border-color: var(--accent); }
 .rail #rail-fill { display: none; }
-.scroll-hint { position: absolute; left: 50%; bottom: 28px; transform: translateX(-50%); display: grid; justify-items: center; gap: 12px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.7); transition: opacity .5s; }
+.scroll-hint { position: absolute; left: 50%; bottom: 28px; bottom: calc(28px + 100% - 100svh); white-space: nowrap; transform: translateX(-50%); display: grid; justify-items: center; gap: 12px; font: 500 11px var(--f-mono); letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.7); transition: opacity .5s; }
 .scroll-hint i { width: 1px; height: 46px; background: linear-gradient(rgba(255,255,255,.8), rgba(255,255,255,0)); position: relative; overflow: hidden; }
 .scroll-hint i::after { content: ""; position: absolute; left: 0; right: 0; height: 40%; top: -40%; background: #fff; animation: drip 2.2s var(--ease) infinite; }
 @keyframes drip { to { top: 100%; } }
@@ -123,7 +125,7 @@ p { margin: 0; }
 .target span { position: absolute; left: 18px; top: -7px; font: 500 10.5px var(--f-mono); letter-spacing: .08em; white-space: nowrap; background: rgba(8,10,14,.55); padding: 3px 8px; }
 
 /* camera feed HUD */
-.feed { position: absolute; inset: 0; pointer-events: none; opacity: 0; font-family: var(--f-mono); color: var(--hud); }
+.feed { position: absolute; inset: 0 0 auto; height: 100%; height: 100svh; pointer-events: none; opacity: 0; font-family: var(--f-mono); color: var(--hud); }
 .feed__frame { position: absolute; inset: 92px var(--gutter) 56px; }
 .feed__frame .c { width: 26px; height: 26px; border-color: rgba(233,238,245,.75); border-width: 1.5px; }
 .feed__top, .feed__bottom { position: absolute; left: var(--gutter); right: var(--gutter); display: flex; justify-content: space-between; gap: 20px; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; }
@@ -196,7 +198,7 @@ p { margin: 0; }
 .parking__intro { max-width: var(--maxw); }
 .parking__intro h2 { font-size: clamp(38px, 4.8vw, 74px); margin: 18px 0 22px; }
 .parking__intro > p { color: var(--muted); font-size: 17px; max-width: 600px; }
-.parking__pin { padding: clamp(40px, 6vh, 70px) 0 clamp(60px, 9vh, 110px); min-height: 100vh; display: flex; align-items: center; }
+.parking__pin { padding: clamp(40px, 6vh, 70px) 0 clamp(60px, 9vh, 110px); min-height: 100vh; min-height: 100svh; display: flex; align-items: center; }
 .parking__stage { display: grid; grid-template-columns: minmax(250px, .62fr) 1.6fr; gap: clamp(28px, 4vw, 64px); align-items: center; width: 100%; }
 .pk-steps { list-style: none; margin: 0; padding: 0; position: relative; }
 .pk-steps::before { content: ""; position: absolute; left: 21px; top: 22px; bottom: 22px; width: 1px; background: var(--line); }
@@ -233,6 +235,14 @@ p { margin: 0; }
 .pk-toast i::after { content: ""; position: absolute; left: 7px; top: 5px; width: 6px; height: 10px; border: solid #0c2a18; border-width: 0 2px 2px 0; transform: rotate(45deg); }
 .pk-toast b { font: 600 13px var(--f-display); }
 .pk-toast span { font: 400 12px var(--f-mono); color: rgba(255,255,255,.7); }
+.pk-cap { display: none; }
+.pk-cap p { display: flex; align-items: baseline; gap: 10px; margin: 0; }
+.pk-cap small { font: 500 11px var(--f-mono); letter-spacing: .06em; color: var(--accent); }
+.pk-cap b { font: 600 18px/1.25 var(--f-display); letter-spacing: -.01em; }
+.pk-cap span { display: block; margin-top: 3px; font-size: 14px; line-height: 1.4; color: var(--muted); }
+.hdots { display: none; justify-content: center; gap: 6px; margin-top: 18px; }
+.hdots i { width: 6px; height: 6px; border-radius: 3px; background: rgba(12,14,18,.18); transition: width .4s var(--ease), background .4s; }
+.hdots i.on { width: 22px; background: var(--ink); }
 .pk-note { z-index: 2; position: absolute; right: 22px; top: 22px; margin: 0; font: 500 10px var(--f-mono); letter-spacing: .08em; text-transform: uppercase; color: rgba(255,255,255,.6); }
 .parking[data-phase="0"] .pk-note, .parking[data-phase="1"] .pk-note { opacity: 0; }
 
@@ -511,6 +521,10 @@ p { margin: 0; }
   .pk-steps::before { display: none; }
   .pk-steps li { grid-template-columns: 1fr; padding: 0; gap: 6px; }
   .pk-steps li b { font-size: 13px; } .pk-steps li span { display: none; }
+  /* pinned single-column stage: clear of the nav, and the street never taller than the screen */
+  .parking__pin { padding: 100px 0 28px; }
+  .parking__stage { gap: 22px; }
+  .pk-view canvas { max-height: calc(100svh - 230px); }
   .method__track { grid-template-columns: 1fr 1fr; }
   .method__line { display: none; }
   .checks { width: min(340px, 44vw); }
@@ -524,7 +538,14 @@ p { margin: 0; }
   .chapter--feed h2 { font-size: 30px; margin: 10px 0 8px; }
   .chapter--feed p:not(.eyebrow) { display: none; }
   .rail { display: none; }
-  .story__shade { background: linear-gradient(0deg, rgba(5,7,10,.75) 0%, rgba(5,7,10,0) 55%), linear-gradient(180deg, rgba(5,7,10,.5), rgba(5,7,10,0) 30%); }
+  .story__shade { background: linear-gradient(0deg, rgba(5,7,10,.8) 0%, rgba(5,7,10,0) 55%), linear-gradient(180deg, rgba(5,7,10,.55), rgba(5,7,10,0) 30%), rgba(5,7,10,.18); }
+  .chapter--hero { right: var(--gutter); }
+  .chapter--hero .eyebrow { font-size: 10.5px; letter-spacing: .06em; }
+  .chapter--hero h1 { margin: 16px 0 20px; }
+  .chapter--hero h1, .chapter--hero .lead, .chapter h2 { text-shadow: 0 2px 22px rgba(5,7,10,.55); }
+  .chapter--hero h1 span { color: rgba(255,255,255,.62); }
+  .scroll-hint { font-size: 10px; }
+  .reticle__tag { left: 0; top: calc(100% + 10px); }
   .feed__frame { inset: 76px 12px 40px; }
   .feed__top { top: 84px; left: 12px; right: 12px; padding: 0 10px; font-size: 9.5px; }
   .feed__top span:nth-child(2) { display: none; }
@@ -536,10 +557,17 @@ p { margin: 0; }
   .checks li b small { display: none; }
   .checks li em { width: 14px; height: 14px; }
   .logged { display: none; }
-  .read { width: 200px; padding: 10px; left: 12px; top: 112px; }
+  .read { width: 150px; padding: 8px; left: 12px; top: 112px; }
+  .read__meta { gap: 8px; font-size: 8.5px; }
   .chapter--feed { top: auto; bottom: 236px; }
-  .read__ocr { font-size: 24px; }
+  .read__ocr { font-size: 18px; margin: 10px 0 8px; }
   .card { width: 84vw; }
+  .hscroll { scrollbar-width: none; scroll-padding-inline: var(--gutter); overscroll-behavior-x: contain; padding-bottom: 28px; }
+  .hscroll::-webkit-scrollbar { display: none; }
+  .hscroll__track { gap: 14px; }
+  .card__body { padding: 22px 22px 26px; }
+  .card--end { padding: 32px; }
+  .hdots { display: flex; margin: 0 0 76px; }
   .pipeline__head .eyebrow { display: none; }
   .pv-dots { display: none; }
   .pv-facts p { font-size: 12px; padding: 6px 0; }
@@ -569,7 +597,8 @@ p { margin: 0; }
   .pv-scene { padding: 12px; }
   /* 1 · equipment */
   .pv-scene[data-s="0"] { gap: 12px; }
-  .pv-gear { grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .pv-gear { grid-template-columns: 1fr 1fr; grid-template-rows: 1.25fr 1fr; gap: 8px; }
+  .pv-gear figure:first-child { grid-column: 1 / -1; }
   .pv-gear figure { border-radius: 12px; }
   .pv-gear figcaption { left: 6px; right: 6px; bottom: 6px; padding: 5px 7px; font-size: 12px; text-align: center; }
   .pv-modes { flex-wrap: nowrap; gap: 6px; }
@@ -610,6 +639,23 @@ p { margin: 0; }
   .certs__list li { padding: 10px 14px; }
   .seal { width: 50px; height: 50px; } .seal b { font-size: 13px; }
   .footer__mark { width: 42px; height: 42px; } .footer__word { width: 140px; height: 26px; }
+  .pk-steps { position: relative; }
+  .pk-steps::before { display: block; left: 10%; right: 10%; top: 16px; bottom: auto; width: auto; height: 1px; }
+  .pk-steps li { justify-items: center; }
+  .pk-steps li b { display: none; }
+  .pk-steps li.on i { box-shadow: 0 0 0 6px rgba(226,88,97,.14); }
+  .pk-cap { display: block; margin-top: 4px; min-height: 58px; }
+  .pk-cap.swap { animation: pvCap .45s var(--ease); }
+  .pk-phase { display: none; }
+  .pk-note { left: 14px; right: auto; top: 14px; font-size: 9px; }
+  .parking__pin { padding: 76px 0 20px; }
+  .parking__stage { gap: 14px; }
+  .pk-view { border-radius: 18px; }
+  .pk-view canvas { aspect-ratio: 4 / 5; max-height: calc(100svh - 230px); }
+  .pk-front__cap { left: 12px; bottom: 12px; font-size: 13px; padding: 8px 12px; }
+  .pk-install { top: auto; bottom: 14px; min-width: 0; width: calc(100% - 28px); }
+  .pk-hud { left: 12px; right: 12px; bottom: 12px; gap: 8px; }
+  .pk-chip { min-width: 0; padding: 8px 12px; border-radius: 12px; }
   .pk-hud { grid-template-columns: repeat(2, auto); }
   .pk-hud .pk-chip:nth-child(2) { display: none; }
   .pk-toasts { display: none; }
@@ -623,6 +669,20 @@ p { margin: 0; }
   .loader__logo { gap: 16px; }
   .loader__word { width: 206px; height: 38px; }
   .loader__mark { width: 54px; height: 54px; }
+}
+/* landscape tablets: the pinned verbali panel must fit under the heading and the steps */
+@media (min-width: 721px) and (max-width: 1080px) and (orientation: landscape) {
+  .pipeline__pin { padding: 92px 0 20px; }
+  .pv-body { aspect-ratio: auto; height: max(300px, calc(100svh - 372px)); }
+}
+/* portrait tablets: the car fills the middle of the camera feed, so the data panel docks at the bottom */
+@media (min-width: 721px) and (max-width: 1080px) and (orientation: portrait) {
+  .checks { left: var(--gutter); right: var(--gutter); top: auto; bottom: 60px; transform: none; width: auto; display: grid; grid-template-columns: 1fr 1fr; column-gap: 32px; padding: 8px 22px; }
+  .checks li:nth-last-child(2) { border-bottom: 0; }
+  .chapter--feed { bottom: 250px; }
+  .logged { top: 140px; bottom: auto; right: calc(var(--gutter) + 18px); }
+  .feed__top { padding-right: 0; }
+  .reticle__tag { left: 0; top: calc(100% + 10px); }
 }
 @media (max-width: 720px) and (max-height: 700px) {
   .pipeline__head h2 { font-size: 25px; }

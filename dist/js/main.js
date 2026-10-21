@@ -146,9 +146,12 @@ let story = null;
 let storyP = 0;
 let heroIntroDone = false;
 
+// the sticky stage is 100lvh tall: measuring against it (not innerHeight) keeps the progress still while
+// mobile toolbars slide in and out
+const storySpan = () => storyEl.offsetHeight - sticky.offsetHeight;
 function storyProgress() {
   const r = storyEl.getBoundingClientRect();
-  const span = storyEl.offsetHeight - innerHeight;
+  const span = storySpan();
   return { p: clamp(-r.top / span), visible: r.bottom > 0 && r.top < innerHeight };
 }
 
@@ -342,8 +345,19 @@ function sectionMotion() {
   mm.add('(max-width: 720px)', () => {
     const hs = $('#hscroll');
     hs.style.overflowX = 'auto'; hs.style.scrollSnapType = 'x mandatory';
-    cards.forEach(c => { c.style.scrollSnapAlign = 'center'; });
-    return () => { hs.style.overflowX = ''; };
+    cards.forEach(c => { c.style.scrollSnapAlign = 'start'; });
+    // dots under the swipe gallery: which card is in view
+    const dots = $('#hdots');
+    dots.innerHTML = cards.map(() => '<i></i>').join('');
+    const dotEls = [...dots.children];
+    const onScroll = () => {
+      const max = hs.scrollWidth - hs.clientWidth;
+      const i = max > 0 ? Math.round(hs.scrollLeft / max * (cards.length - 1)) : 0;
+      dotEls.forEach((d, k) => d.classList.toggle('on', k === i));
+    };
+    hs.addEventListener('scroll', onScroll, { passive: true });
+    onScroll();
+    return () => { hs.style.overflowX = ''; hs.style.scrollSnapType = ''; cards.forEach(c => { c.style.scrollSnapAlign = ''; }); hs.removeEventListener('scroll', onScroll); dots.innerHTML = ''; };
   });
 
   // parking: living street simulation, pinned through the five phases
@@ -439,8 +453,8 @@ function contactForm() {
   await outro();
   heroIntroDone = true;
   ScrollTrigger.refresh();
-  window.__go = p => { const y = storyEl.offsetTop + p * (storyEl.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); };
+  window.__go = p => { const y = storyEl.offsetTop + p * storySpan(); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); };
   // debug hook: ?p=0.5 jumps into the sequence
   const q = new URLSearchParams(location.search).get('p');
-  if (q !== null) { const y = storyEl.offsetTop + parseFloat(q) * (storyEl.offsetHeight - innerHeight); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); }
+  if (q !== null) { const y = storyEl.offsetTop + parseFloat(q) * storySpan(); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); }
 })();

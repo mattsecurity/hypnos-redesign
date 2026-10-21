@@ -33,23 +33,13 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     free: root.querySelector('#pk-free'), toasts: root.querySelector('#pk-toasts'), phase: root.querySelector('#pk-phase'),
     front: root.querySelector('#pk-front'), hud: root.querySelector('.pk-hud'), install: root.querySelector('#pk-install'),
     note: root.querySelector('.pk-note'),
+    cap: root.querySelector('#pk-cap'), capN: root.querySelector('#pk-cap-n'), capT: root.querySelector('#pk-cap-t'), capD: root.querySelector('#pk-cap-d'),
   };
 
   // pin first (synchronously), so every ScrollTrigger below this section is measured with the pin spacer
   let P = 0, PT = 0;                 // P = smoothed progress the scene renders, PT = scroll target
-  const mm = gsap.matchMedia();
-  mm.add('(min-width: 961px)', () => {
-    const st = ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=420%', scrub: true, onUpdate: s => { PT = s.progress * 1.02; } });
-    return () => st.kill();
-  });
-  mm.add('(max-width: 960px)', () => {
-    // no pin on small screens: the story plays by itself once the stage is in view
-    let t0 = null;
-    const st = ScrollTrigger.create({ trigger: '.pk-view', start: 'top 75%', onEnter: () => { t0 = performance.now(); } });
-    const tick = () => { if (t0 !== null) PT = Math.min(1.02, (performance.now() - t0) / 16000); };
-    gsap.ticker.add(tick);
-    return () => { st.kill(); gsap.ticker.remove(tick); };
-  });
+  // pinned on every screen: the five phases follow the scroll, on phones and tablets too
+  ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=420%', scrub: true, onUpdate: s => { PT = s.progress * 1.02; } });
 
   const CAR_MODELS = 18;
   const [street, van, meterTop, ...carLoad] = await Promise.all([
@@ -61,13 +51,15 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   const carImgs = carLoad.map((img, i) => img && { img, len: CAR_LEN[i] || 4.2 }).filter(Boolean);
 
   /* ---------- sizing ---------- */
-  let S = 20, dpr = 1;
+  // the street covers the canvas box (3:2 on large screens, taller on phones, cropped at the sides)
+  let S = 20, dpr = 1, OX = 0, OY = 0;
   function resize() {
     const r = canvas.getBoundingClientRect();
     dpr = Math.min(devicePixelRatio || 1, 2);
-    const cw = Math.max(320, r.width);
-    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(cw * H / W * dpr);
-    S = cw / W;
+    const cw = Math.max(320, r.width), ch = r.height > 0 ? r.height * cw / Math.max(1, r.width) : cw * H / W;
+    canvas.width = Math.round(cw * dpr); canvas.height = Math.round(ch * dpr);
+    S = Math.max(cw / W, ch / H);
+    OX = (cw - W * S) / 2; OY = (ch - H * S) / 2;
   }
 
   /* ---------- stalls (45°, nose to the kerb) ---------- */
@@ -336,6 +328,11 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     steps.forEach((s, k) => { s.classList.toggle('on', k === i); s.classList.toggle('done', k < i); });
     ui.phase.innerHTML = `<b>${String(i + 1).padStart(2, '0')}</b> ${PHASES[i]}`;
     root.dataset.phase = String(i);
+    // phone: one caption under the dots instead of five crowded labels
+    ui.capN.textContent = `0${i + 1} / 05`;
+    ui.capT.textContent = PHASES[i];
+    ui.capD.textContent = steps[i].querySelector('span').textContent;
+    ui.cap.classList.remove('swap'); void ui.cap.offsetWidth; ui.cap.classList.add('swap');
     if (i > 0) toast(`<i></i><b>${PHASES[i]}</b><span>${TOASTS[i]}</span>`);
   }
 
@@ -349,9 +346,9 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     const pInst = range(P, .22, .43), pPaint = range(P, .46, .62), pMaint = range(P, .65, .81), live = P >= .82;
     setPhase(P < .2 ? 0 : P < .45 ? 1 : P < .64 ? 2 : P < .82 ? 3 : 4);
 
-    g.setTransform(1, 0, 0, 1, 0, 0);
+    g.setTransform(1, 0, 0, 1, OX * dpr, OY * dpr);
     if (street) g.drawImage(street, 0, 0, W * k, H * k);
-    else { g.fillStyle = '#5b5e62'; g.fillRect(0, 0, canvas.width, canvas.height); }
+    else { g.fillStyle = '#5b5e62'; g.fillRect(0, 0, W * k, H * k); }
 
     const f = ui.front;
     f.style.opacity = String(1 - fade);

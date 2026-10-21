@@ -562,7 +562,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   /* ---------- sizing ---------- */
   let W = 1, H = 1, aspect = 1;
   function resize() {
-    W = canvas.clientWidth || innerWidth; H = canvas.clientHeight || innerHeight; aspect = W / H;
+    const w = canvas.clientWidth || innerWidth, h = canvas.clientHeight || innerHeight;
+    // mobile browsers fire resize when their toolbars slide: reallocating the buffers then flashes black tiles
+    if (w === W && h === H) return;
+    W = w; H = h; aspect = W / H;
     renderer.setSize(W, H, false); composer.setSize(W, H);
     camera.aspect = aspect; camera.updateProjectionMatrix();
     grade.uniforms.uRes.value.set(W * renderer.getPixelRatio(), H * renderer.getPixelRatio());
@@ -574,6 +577,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const CAR_Z = ROAD.laneS1;
   const tmpA = V(0, 0, 0), tmpB = V(0, 0, 0), up = V(0, 0, -1);
   const portrait = () => aspect < 0.9;
+  // where the frame centres relative to the hero car: on portrait screens the car sits in the upper third
+  // (a fixed share of the visible height at that altitude), clear of the captions at the bottom
+  const lead = alt => (portrait() ? -.3 * alt * Math.tan(THREE.MathUtils.degToRad(fovDeg / 2)) : 1.2);
+  const closeAlt = () => (portrait() ? 16.5 : 10.5);
   const fovDeg = 35;
 
   function nadirAltitudeToFit() {
@@ -603,8 +610,8 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       // A — nadir: frame from city to car
       const a = easeIO(range(p, .04, .30));
       const b = easeIO(range(p, .28, .46));
-      const alt = lerp(lerp(hStart, 34, a), portrait() ? 13.5 : 10.5, b);
-      const focusX = lerp(lerp(-8, cx + 6, a), cx + 1.2, b);
+      const alt = lerp(lerp(hStart, 34, a), closeAlt(), b);
+      const focusX = lerp(lerp(-8, cx + (portrait() ? lead(alt) : 6), a), cx + lead(alt), b);
       const focusZ = lerp(lerp(-.7, CAR_Z, a), CAR_Z, b);
       shot.pos.set(focusX, alt, focusZ);
       shot.look.set(focusX, 0, focusZ);
@@ -617,10 +624,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       // B — rush ahead to the checkpoint (nadir), descend onto the ANPR camera, swing behind it
       const t = range(p, .46, .64);
       const H = housingWorld;
-      const startX = carX(.46) + 1.2;
+      const startX = carX(.46) + lead(closeAlt());
       if (t < .4) {
         const e = easeIO(t / .4);
-        const alt = lerp(portrait() ? 13.5 : 10.5, 8.8, e) + 6 * Math.sin(Math.PI * e);
+        const alt = lerp(closeAlt(), 8.8, e) + 6 * Math.sin(Math.PI * e);
         shot.pos.set(lerp(startX, H.x - .25, e), alt, lerp(CAR_Z, H.z, e));
         shot.look.set(shot.pos.x, 0, shot.pos.z);
         shot.up.set(1, 0, 0);
