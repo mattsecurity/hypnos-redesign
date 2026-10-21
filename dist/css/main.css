@@ -43,16 +43,19 @@ p { margin: 0; }
 :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
 
 /* ---------------- loader ---------------- */
-.loader { position: fixed; inset: 0; z-index: 100; background: var(--paper); display: grid; place-items: center; }
-.loader__inner { display: grid; justify-items: center; gap: 44px; }
-.loader__logo { display: flex; align-items: center; gap: 26px; color: var(--ink); }
-.loader__mark { width: 86px; height: 86px; overflow: visible; }
-.loader__word { width: 336px; height: 62px; overflow: visible; }
-.loader__meta { display: grid; justify-items: center; gap: 14px; width: 320px; }
-.loader__claim { white-space: nowrap; font: 500 11px var(--f-mono); letter-spacing: .14em; text-transform: uppercase; color: var(--soft); opacity: 0; }
-.loader__bar { position: relative; width: 100%; height: 1px; background: var(--line); overflow: hidden; }
-.loader__bar i { position: absolute; inset: 0; background: var(--ink); transform-origin: left; transform: scaleX(0); }
-.loader__pct { font: 500 11px var(--f-mono); color: var(--soft); }
+/* dark, about one second, opening straight onto the night hero (no white flash) */
+@property --glow { syntax: "<number>"; inherits: false; initial-value: 0; }
+.loader { --glow: 0; position: fixed; inset: 0; z-index: 100; background: var(--night); display: grid; place-items: center; }
+.loader::before { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: var(--glow);
+  background: radial-gradient(40% 32% at 50% 48%, rgba(242,106,33,.16), rgba(242,106,33,0) 70%), radial-gradient(70% 55% at 50% 50%, rgba(80,110,170,.12), rgba(7,9,13,0) 75%); }
+.loader__inner { position: relative; display: grid; justify-items: center; gap: 36px; }
+.loader__logo { display: flex; align-items: center; gap: 22px; color: #fff; }
+.loader__mark { width: 72px; height: 72px; overflow: visible; }
+.loader__word { width: 280px; height: 52px; overflow: visible; }
+.loader__meta { display: grid; justify-items: center; gap: 14px; width: 220px; }
+.loader__claim { white-space: nowrap; font: 500 10.5px var(--f-mono); letter-spacing: .16em; text-transform: uppercase; color: rgba(255,255,255,.55); opacity: 0; }
+.loader__bar { position: relative; width: 100%; height: 1px; background: rgba(255,255,255,.12); overflow: hidden; border-radius: 1px; }
+.loader__bar i { position: absolute; inset: 0; background: linear-gradient(90deg, rgba(255,255,255,.2), #fff 60%, #f26a21); transform-origin: left; transform: scaleX(0); }
 
 /* ---------------- nav ---------------- */
 .nav {
@@ -85,8 +88,11 @@ p { margin: 0; }
 /* the stage fills the large viewport, so the 3D scene also runs behind mobile browser toolbars (no white band
    when they slide away); captions and HUD stay inside the small viewport, always above the toolbar */
 .story__sticky { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; background: var(--night); transform-origin: 50% 40%; will-change: transform; }
-.story__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
-.story__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; opacity: 0; }
+.story__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .9s var(--ease); }
+/* the aerial photo carries the hero until the 3D scene has rendered its first frame (laid out by main.js) */
+.story__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 50%; transition: opacity .6s .5s; }
+.story.is-live .story__canvas { opacity: 1; }
+.story.is-live .story__fallback { opacity: 0; }
 .story.is-fallback .story__fallback { opacity: 1; }
 .story.is-fallback .story__canvas, .story.is-fallback .feed, .story.is-fallback .reticle, .story.is-fallback .target { display: none; }
 .story__shade { position: absolute; inset: 0; pointer-events: none;
@@ -670,9 +676,12 @@ p { margin: 0; }
   .method__track { grid-template-columns: 1fr; }
   .field-row { grid-template-columns: 1fr; }
   .contact__list div { grid-template-columns: 1fr; }
-  .loader__logo { gap: 16px; }
-  .loader__word { width: 206px; height: 38px; }
-  .loader__mark { width: 54px; height: 54px; }
+  .loader__logo { gap: 14px; }
+  .loader__word { width: 190px; height: 35px; }
+  .loader__mark { width: 48px; height: 48px; }
+  .loader__inner { gap: 28px; }
+  .loader__meta { width: 180px; }
+  .loader__claim { font-size: 9.5px; letter-spacing: .12em; }
 }
 /* landscape tablets: the pinned verbali panel must fit under the heading and the steps */
 @media (min-width: 721px) and (max-width: 1080px) and (orientation: landscape) {

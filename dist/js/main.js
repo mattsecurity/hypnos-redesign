@@ -82,19 +82,15 @@ function updateNav() {
 /* ================================================================ */
 const loader = $('#loader');
 const loaderBar = $('#loader-bar');
-const loaderPct = $('#loader-pct');
-let loadP = 0;
-const setLoad = p => {
-  loadP = Math.max(loadP, p);
-  gsap.to(loaderBar, { scaleX: loadP, duration: .4, ease: 'power2.out', overwrite: true });
-  loaderPct.textContent = `${Math.round(loadP * 100)}%`;
-};
+// about one second: the six facets of the H snap together, the word wipes in, the orange ring spins into place.
+// The page never waits for the 3D scene: the hero opens on the aerial photo and the scene fades in when ready.
 const introTl = gsap.timeline({ paused: true })
-  // the six facets of the H slide together, then the word wipes in and the orange ring spins into place
-  .from('.loader__mark .mk', { opacity: 0, x: i => [-60, 40, 70, -30, -70, 60][i], y: i => [60, -30, 50, -60, 20, -60][i], duration: 1.1, stagger: .07, ease: 'power3.out' })
-  .to('#hy-reveal-r', { attr: { width: 400 }, duration: 1, ease: 'power3.inOut' }, '-=.55')
-  .from('.loader__word .rg', { rotation: -160, scale: .4, opacity: 0, svgOrigin: '289.4 36.65', duration: 1.1, ease: 'expo.out' }, '<.35')
-  .to('.loader__claim', { opacity: 1, duration: .8 }, '-=.5');
+  .to(loader, { '--glow': 1, duration: .9, ease: 'power2.out' }, 0)
+  .from('.loader__mark .mk', { opacity: 0, x: i => [-34, 22, 40, -18, -40, 34][i], y: i => [34, -18, 28, -34, 12, -34][i], duration: .6, stagger: .035, ease: 'power3.out' }, 0)
+  .to('#hy-reveal-r', { attr: { width: 400 }, duration: .55, ease: 'power3.inOut' }, .25)
+  .from('.loader__word .rg', { rotation: -140, scale: .5, opacity: 0, svgOrigin: '289.4 36.65', duration: .7, ease: 'expo.out' }, .4)
+  .to('.loader__claim', { opacity: 1, duration: .4 }, .55)
+  .fromTo(loaderBar, { scaleX: 0 }, { scaleX: 1, duration: 1.05, ease: 'power2.inOut' }, 0);
 gsap.set('.brand', { opacity: 0 });
 introTl.play();
 const introDone = new Promise(r => introTl.eventCallback('onComplete', r));
@@ -108,15 +104,15 @@ async function outro() {
   const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
   const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
   const tl = gsap.timeline();
-  tl.to('.loader__meta', { opacity: 0, y: 10, duration: .4, ease: 'power2.in' })
-    .to(logo, { x: dx, y: dy, scale: s, color: '#ffffff', duration: 1.15, ease: 'expo.inOut' }, '<.1')
-    .to(loader, { backgroundColor: 'rgba(255,255,255,0)', duration: .9, ease: 'power2.inOut' }, '<.35')
+  tl.to('.loader__meta', { opacity: 0, y: 6, duration: .25, ease: 'power2.in' })
+    .to(logo, { x: dx, y: dy, scale: s, duration: .75, ease: 'expo.inOut' }, '<.05')
+    .to(loader, { backgroundColor: 'rgba(7,9,13,0)', '--glow': 0, duration: .55, ease: 'power2.inOut' }, '<.2')
     .set(target, { opacity: 1 })
-    .to(logo, { opacity: 0, duration: .25 })
+    .to(logo, { opacity: 0, duration: .15 })
     .add(() => { loader.remove(); document.body.classList.remove('is-loading'); lenis && lenis.start(); }, '<')
     .set('.chapter--hero', { opacity: 1 }, '<')
-    .fromTo('.chapter--hero > *', { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 1.2, stagger: .1, ease: 'power3.out' }, '-=.8')
-    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: 1, stagger: .05 }, '<.2');
+    .fromTo('.chapter--hero > *', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: .9, stagger: .07, ease: 'power3.out' }, '-=.6')
+    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, '<.15');
   await tl;
 }
 
@@ -153,6 +149,22 @@ function storyProgress() {
   const r = storyEl.getBoundingClientRect();
   const span = storySpan();
   return { p: clamp(-r.top / span), visible: r.bottom > 0 && r.top < innerHeight };
+}
+
+// The aerial photo under the canvas is laid out exactly like the scene's first frame (same scale, centre and,
+// on portrait screens, the same quarter turn), so the hero shows it while the 3D loads and the cross-fade is seamless.
+const fallbackImg = $('.story__fallback');
+function fitFallback() {
+  const W = sticky.offsetWidth, H = sticky.offsetHeight;
+  if (!W || !H) return;
+  const MPP = .135, GW = 1536 * MPP, GH = 1024 * MPP, FOCUS = { x: -8, z: -.7 };  // mirror story.js
+  const aspect = W / H, portrait = aspect < .9;
+  const visH = portrait ? GW * .82 : GH * .92, visW = portrait ? GH * .92 : GW * .92;
+  const ppm = H / Math.min(visH, visW / aspect);                 // screen pixels per metre in the first shot
+  Object.assign(fallbackImg.style, {
+    inset: 'auto', left: '50%', top: '50%', width: `${GW * ppm}px`, height: `${GH * ppm}px`, maxWidth: 'none',
+    transform: `translate(-50%, -50%) rotate(${portrait ? -90 : 0}deg) translate(${-FOCUS.x * ppm}px, ${-FOCUS.z * ppm}px)`,
+  });
 }
 
 function updateChapters(p) {
@@ -297,13 +309,15 @@ async function initStory() {
   const canvas = $('#story-canvas');
   try {
     if (!window.WebGL2RenderingContext) throw new Error('WebGL2 non disponibile');
-    story = await createStory({ canvas, onProgress: p => setLoad(.08 + p * .92), quality: new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
+    story = await createStory({ canvas, quality: new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
     story.onFrame(onStoryFrame);
     window.__story = story;
     drawPlateCrop(story.plateCanvas);
     const { p } = storyProgress(); story.jump(p);
     story.renderOnce();
     addEventListener('resize', () => story.resize());
+    // the first rendered frame matches the photo underneath: cross-fade into the live scene
+    requestAnimationFrame(() => storyEl.classList.add('is-live'));
   } catch (err) {
     console.warn('Story fallback:', err);
     storyEl.classList.add('is-fallback');
@@ -465,13 +479,15 @@ function contactForm() {
 /* ================================================================ */
 /*  Boot                                                             */
 /* ================================================================ */
+const wait = ms => new Promise(r => setTimeout(r, ms));
 (async function boot() {
-  setLoad(.04);
-  const timeout = new Promise(r => setTimeout(r, 15000));
-  await Promise.race([initStory(), timeout]);
-  setLoad(1);
+  fitFallback();
+  addEventListener('resize', fitFallback);
+  const storyReady = initStory();
   await introDone;
-  if (document.fonts) await Promise.race([document.fonts.ready, new Promise(r => setTimeout(r, 1500))]);
+  // a short grace period lets a cached scene open directly in 3D; otherwise the photo carries the hero
+  await Promise.race([storyReady, wait(500)]);
+  if (document.fonts) await Promise.race([document.fonts.ready, wait(300)]);
   tick();
   sectionMotion();
   contactForm();
