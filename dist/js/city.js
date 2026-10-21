@@ -322,6 +322,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
         const n = Math.round((x1 - x) * per);
         for (let i = 0; i < n; i++) {
           const px = x + .08 + R() * (x1 - x - .16);
+          if (Math.abs(px - 28) < .85) continue;                     // maintenance gap in front of the ANPR pole
           const th = R() * Math.PI;                                  // 0 → outer side, π/2 → top, π → inner side
           const c = Math.cos(th), sn = Math.sin(th);
           const e = .5;                                              // 2/n with n = 4
@@ -336,6 +337,7 @@ export function buildCity({ scene, groundMat, ROAD, GW, lamps, isLow, sky, media
         // a few inner fill cards so the hedge never looks hollow
         for (let i = 0; i < n * .15; i++) {
           const px = x + R() * (x1 - x);
+          if (Math.abs(px - 28) < .85) continue;
           pushCard(px, SOIL + R() * hh * .8, zc + (R() - .5) * hw, .22, V3(px, SOIL + hh * .4, zc), boxTint().map((v, k) => k < 3 ? v * .55 : 0), BOX, .8, false, mcards);
         }
         x = x1 + .35 + R() * .3;                                    // small gap between hedge sections

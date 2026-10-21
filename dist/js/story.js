@@ -466,18 +466,78 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
 
   /* ---------- ANPR pole + camera ---------- */
   const rig = new THREE.Group(); rig.position.copy(POLE); scene.add(rig);
-  const galv = new THREE.MeshStandardMaterial({ color: 0xa3a8ad, metalness: .85, roughness: .42 });
-  const POLE_H = 6.6;
-  const pole = new THREE.Mesh(new THREE.CylinderGeometry(.075, .1, POLE_H, 24), galv); pole.position.y = POLE_H / 2; rig.add(pole);
-  const base = new THREE.Mesh(new THREE.CylinderGeometry(.2, .22, .12, 24), galv); base.position.y = .06; rig.add(base);
-  const footing = new THREE.Mesh(new THREE.BoxGeometry(.7, .2, .7), concrete); footing.position.y = .1; rig.add(footing);
-  const cap = new THREE.Mesh(new THREE.SphereGeometry(.078, 16, 8, 0, Math.PI * 2, 0, Math.PI / 2), galv); cap.position.y = POLE_H; rig.add(cap);
-  const ARM_L = 2.3;
-  const arm = new THREE.Mesh(new THREE.CylinderGeometry(.045, .05, ARM_L, 16), galv); arm.rotation.x = Math.PI / 2; arm.position.set(0, POLE_H - .25, ARM_L / 2); rig.add(arm);
-  const cabinet = new THREE.Mesh(new RoundedBoxGeometry(.32, .5, .2, 3, .03), new THREE.MeshStandardMaterial({ color: 0x8e9398, metalness: .5, roughness: .45 }));
-  cabinet.position.set(-.2, 2.4, 0); rig.add(cabinet);
-
-  const armCap = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), galv); armCap.position.set(0, POLE_H - .25, ARM_L); rig.add(armCap);
+  const POLE_H = 6.6, ARM_L = 2.3, ARM_Y = POLE_H - .25;
+  const poleR = y => lerp(.098, .068, (y - .24) / (POLE_H - .24));   // tapered tube, radius at height y
+  const rigAdd = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); rig.add(m); return m; };
+  // hot-dip galvanised steel: spangled, unevenly matte
+  const galvMap = noiseTexture(256, .8, 1, 1); galvMap.colorSpace = THREE.SRGBColorSpace;
+  const galvRough = noiseTexture(256, .28, .55, 1);
+  const galvanised = (ru, rv, color = 0xaab0b6) => {
+    const m = new THREE.MeshStandardMaterial({ color, metalness: .85, roughness: 1, map: galvMap.clone(), roughnessMap: galvRough.clone(), envMapIntensity: 1.1 });
+    m.map.repeat.set(ru, rv); m.roughnessMap.repeat.set(ru, rv); return m;
+  };
+  const galv = galvanised(2, 2);
+  const darkSteel = new THREE.MeshStandardMaterial({ color: 0x5d6268, metalness: .8, roughness: .45 });
+  {
+    // foundation: concrete plinth, base plate on anchor bolts, four gussets, anti-corrosion collar
+    rigAdd(new RoundedBoxGeometry(.62, .3, .62, 2, .03), concrete, 0, .07, 0);
+    rigAdd(new THREE.BoxGeometry(.34, .022, .34), galv, 0, .231, 0);
+    for (const sx of [-1, 1]) for (const sz of [-1, 1]) {
+      rigAdd(new THREE.CylinderGeometry(.011, .011, .07, 10), darkSteel, sx * .13, .265, sz * .13);
+      rigAdd(new THREE.CylinderGeometry(.024, .024, .004, 16), darkSteel, sx * .13, .244, sz * .13);
+      rigAdd(new THREE.CylinderGeometry(.019, .019, .018, 6), darkSteel, sx * .13, .255, sz * .13);
+    }
+    const tri = new THREE.Shape(); tri.moveTo(.098, 0); tri.lineTo(.2, 0); tri.lineTo(.098, .17); tri.closePath();
+    const gusset = new THREE.ExtrudeGeometry(tri, { depth: .01, bevelEnabled: false }); gusset.translate(0, 0, -.005);
+    for (let k = 0; k < 4; k++) rigAdd(gusset, galv, 0, .242, 0).rotation.y = k * Math.PI / 2;
+    rigAdd(new THREE.CylinderGeometry(.106, .108, .32, 40), galvanised(3, 1, 0x9ea4aa), 0, .242 + .16, 0);
+    // tapered pole + cap
+    rigAdd(new THREE.CylinderGeometry(poleR(POLE_H), poleR(.24), POLE_H - .24, 40), galvanised(3, 36), 0, (POLE_H + .24) / 2, 0);
+    rigAdd(new THREE.SphereGeometry(.071, 24, 10, 0, Math.PI * 2, 0, Math.PI / 2), galv, 0, POLE_H, 0);
+    // inspection hatch (towards the traffic it watches, −X) with two security screws
+    const hx = -poleR(1.05) - .004;
+    rigAdd(new RoundedBoxGeometry(.014, .3, .085, 2, .005), galvanised(1, 3, 0xa2a8ae), hx, 1.05, 0);
+    for (const y of [.93, 1.17]) rigAdd(new THREE.CylinderGeometry(.006, .006, .006, 10), darkSteel, hx - .008, y, 0).rotation.z = Math.PI / 2;
+  }
+  {
+    // outreach arm: clamp collar + flange on the pole, tapered tube, diagonal strut, end cap
+    rigAdd(new THREE.CylinderGeometry(poleR(ARM_Y) + .014, poleR(ARM_Y) + .014, .3, 32), galv, 0, ARM_Y, 0);
+    rigAdd(new THREE.BoxGeometry(.2, .2, .022), galv, 0, ARM_Y, poleR(ARM_Y) + .02);
+    for (const sx of [-1, 1]) for (const sy of [-1, 1]) rigAdd(new THREE.CylinderGeometry(.012, .012, .016, 6), darkSteel, sx * .075, ARM_Y + sy * .075, poleR(ARM_Y) + .035).rotation.x = Math.PI / 2;
+    const a0 = poleR(ARM_Y) + .03;
+    const arm = rigAdd(new THREE.CylinderGeometry(.045, .053, ARM_L - a0, 24), galvanised(1, 10), 0, ARM_Y, (ARM_L + a0) / 2); arm.rotation.x = Math.PI / 2;
+    rigAdd(new THREE.CircleGeometry(.046, 24), galv, 0, ARM_Y, ARM_L);
+    const s0 = V(0, ARM_Y - 1.1, poleR(ARM_Y - 1.1) + .02), s1 = V(0, ARM_Y - .05, 1.15);
+    const sd = s1.clone().sub(s0);
+    const strut = rigAdd(new THREE.CylinderGeometry(.022, .022, sd.length(), 16), galvanised(1, 6), 0, 0, 0);
+    strut.position.copy(s0).addScaledVector(sd, .5); strut.quaternion.setFromUnitVectors(V(0, 1, 0), sd.normalize());
+    rigAdd(new THREE.CylinderGeometry(poleR(s0.y) + .012, poleR(s0.y) + .012, .1, 28), galv, 0, s0.y, 0);
+    rigAdd(new THREE.BoxGeometry(.03, .05, .06), galv, 0, s1.y - .005, s1.z);
+  }
+  {
+    // street cabinet on the pole: painted steel, rain hood, door seam, hinges, lock, conduit into the pole
+    const cy = 2.5, cx = -poleR(cy) - .115;
+    const paint = new THREE.MeshStandardMaterial({ color: 0xbfc4c8, metalness: .25, roughness: .5, envMapIntensity: .9 });
+    rigAdd(new RoundedBoxGeometry(.2, .52, .36, 3, .014), paint, cx, cy, 0);
+    rigAdd(new RoundedBoxGeometry(.006, .48, .32, 2, .003), new THREE.MeshStandardMaterial({ color: 0xb3b8bd, metalness: .25, roughness: .55 }), cx - .1, cy, 0);
+    const hood = rigAdd(new THREE.BoxGeometry(.25, .012, .4), paint, cx - .01, cy + .272, 0); hood.rotation.z = .14;
+    for (const y of [cy - .16, cy + .16]) rigAdd(new THREE.CylinderGeometry(.007, .007, .05, 10), darkSteel, cx - .1, y, -.163);
+    rigAdd(new THREE.CylinderGeometry(.012, .012, .014, 16), darkSteel, cx - .106, cy, .12).rotation.z = Math.PI / 2;
+    for (const y of [cy - .17, cy + .17]) {
+      rigAdd(new THREE.TorusGeometry(poleR(y) + .004, .006, 8, 32), darkSteel, 0, y, 0).rotation.x = Math.PI / 2;
+      rigAdd(new THREE.BoxGeometry(.03, .04, .06), darkSteel, -poleR(y) - .012, y, 0);
+    }
+    const duct = new THREE.CatmullRomCurve3([V(cx, cy - .26, 0), V(cx, cy - .4, 0), V(cx + .05, cy - .5, 0), V(-poleR(cy - .55) + .01, cy - .55, 0)]);
+    rig.add(new THREE.Mesh(new THREE.TubeGeometry(duct, 24, .017, 10), new THREE.MeshStandardMaterial({ color: 0x3a3d41, roughness: .6 })));
+  }
+  {
+    // "Area videosorvegliata" sign facing the oncoming traffic (−X), banded to the pole
+    const sy = 3.35, sx = -poleR(sy) - .02;
+    rigAdd(new THREE.BoxGeometry(.008, .36, .26), galv, sx, sy, 0);
+    const sign = rigAdd(new THREE.PlaneGeometry(.25, .35), new THREE.MeshStandardMaterial({ map: makeSignTexture(renderer), roughness: .5 }), sx - .0045, sy, 0);
+    sign.rotation.y = -Math.PI / 2;
+    for (const y of [sy - .12, sy + .12]) rigAdd(new THREE.TorusGeometry(poleR(y) + .003, .005, 8, 32), darkSteel, 0, y, 0).rotation.x = Math.PI / 2;
+  }
 
   // ANPR unit (local +Z = lens direction, +X = south side, origin = tilt pivot on the bracket)
   const housing = buildAnprCamera(renderer);
@@ -485,7 +545,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   housing.rotation.order = 'YXZ';
   housing.rotation.y = -Math.PI / 2;
   housing.rotation.x = 0.2;
-  const HOUSING_POS = V(0, POLE_H - .25 + .045, ARM_L - .3);
+  const HOUSING_POS = V(0, ARM_Y + .045, ARM_L - .3);
   housing.position.copy(HOUSING_POS);
   rig.add(housing);
   // pipe clamp + swivel stem on the arm (not tilted with the camera)
@@ -515,6 +575,9 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   }
   const lensWorld = housing.localToWorld(V(0, .2, .42)).clone();        // just in front of the window
   const housingWorld = housing.localToWorld(V(0, .2, 0)).clone();
+  // plate-reading lens: centre on the window and optical axis (the push-in before the feed ends on it)
+  const plateLens = housing.localToWorld(V(.036, CAM.CY - .004, CAM.Z1 + .006)).clone();
+  const plateAxis = housing.localToWorld(V(.036, CAM.CY - .004, CAM.Z1 + 1)).sub(plateLens).normalize();
 
   /* ---------- post-processing ---------- */
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: isLow ? 0 : 4 }));
@@ -613,14 +676,17 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const shot = { pos: V(), look: V(), up: V(0, 0, -1), fov: fovDeg, roll: 0 };
   // top-down shot on the ANPR unit: high enough to hold the whole unit and its logo
   const topDist = () => (portrait() ? 2.35 : 1.6);
-  // ...and framed clear of the captions: higher up on phones (caption at the bottom), right of the text on wide screens
-  function topOffset(upVec, w) {
+  // ...and framed clear of the captions: higher up on phones (caption at the bottom), right of the text on wide screens.
+  // Moves camera and target together, by a share of the frame visible at the target's distance.
+  const offR = V(), offU = V(), offF = V();
+  function frameOffset(w) {
     if (w <= 0) return;
-    const d = topDist() - .1, visH = 2 * d * Math.tan(THREE.MathUtils.degToRad(fovDeg / 2)), visW = visH * aspect;
-    const sUp = portrait() ? .16 * visH : 0, sRight = portrait() ? 0 : .07 * visW;
-    // screen right while looking straight down = (−up.z, 0, up.x)
-    const ox = -(upVec.x * sUp - upVec.z * sRight) * w, oz = -(upVec.z * sUp + upVec.x * sRight) * w;
-    shot.pos.x += ox; shot.pos.z += oz; shot.look.x += ox; shot.look.z += oz;
+    offF.copy(shot.look).sub(shot.pos); const d = offF.length(); offF.divideScalar(d);
+    offR.crossVectors(offF, shot.up).normalize(); offU.crossVectors(offR, offF);
+    const visH = 2 * d * Math.tan(THREE.MathUtils.degToRad(shot.fov / 2)), visW = visH * aspect;
+    const sx = (portrait() ? 0 : .15 * visW) * w, sy = (portrait() ? .16 * visH : 0) * w;
+    shot.pos.addScaledVector(offR, -sx).addScaledVector(offU, -sy);
+    shot.look.addScaledVector(offR, -sx).addScaledVector(offU, -sy);
   }
 
   function computeShot(p, time) {
@@ -649,43 +715,49 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
       shot.pos.y += wob(time * .23, 4) * sway * .6;
       shot.roll = wob(time * .21, 3) * .006 + (startAngle === 1 ? 0 : Math.sin(Math.PI * rotT) * .045);
     } else if (p < .64) {
-      // B — rush ahead to the checkpoint (nadir), descend onto the ANPR camera, swing behind it
+      // B — rush ahead to the checkpoint (nadir), descend onto the ANPR camera, orbit to its front, push into the lens
       const t = range(p, .46, .64);
       const H = housingWorld;
       const startX = carX(.46) + lead(closeAlt());
+      let still = 0;                                              // 1 = locked on the lens (no hover)
       if (t < .4) {
         const e = easeIO(t / .4);
         const alt = lerp(closeAlt(), 8.8, e) + 6 * Math.sin(Math.PI * e);
         shot.pos.set(lerp(startX, H.x - .25, e), alt, lerp(CAR_Z, H.z, e));
         shot.look.set(shot.pos.x, 0, shot.pos.z);
         shot.up.set(1, 0, 0);
-      } else if (t < .68) {
-        const e = easeIO((t - .4) / .28);
+      } else if (t < .6) {
+        const e = easeIO((t - .4) / .2);
         const alt = lerp(8.8, H.y + topDist(), e);
         shot.pos.set(H.x - .25 * (1 - e) - .12 * e, alt, H.z);
         shot.look.set(shot.pos.x, H.y, H.z);
-        const phi = Math.PI * e;                                  // turn around to face the traffic
+        const phi = Math.PI * e;                                  // turn around: the lens ends up pointing to the top of the frame
         shot.up.set(Math.cos(phi), 0, Math.sin(phi));
-        topOffset(shot.up, e);
+        frameOffset(e);
       } else {
-        const e = easeIO((t - .68) / .32);
-        const theta = lerp(0, portrait() ? 1.08 : 1.2, e);        // polar angle from vertical
-        const r = lerp(topDist(), portrait() ? 1.55 : 1.12, e);
-        // a little to the south on wide screens (unit on the right); on the unit's axis on phones (narrow horizontal field)
-        const dir = tmpA.set(Math.sin(theta), Math.cos(theta), Math.sin(theta) * (portrait() ? -.03 : .12)).normalize();
-        shot.pos.copy(H).addScaledVector(dir, r);
-        shot.pos.x -= .12 * (1 - e);
-        shot.look.copy(H);
-        topOffset(V(-1, 0, 0), 1 - ease(e));
-        // over the shoulder: the unit sits bottom-right on wide screens, bottom-centre on phones
-        const roadPt = tmpB.set(POLE.x - 16, 0, H.z + (portrait() ? .2 : 1.1)).lerp(H, .2);
-        shot.look.lerp(roadPt, ease(range(e, .15, 1)));
-        shot.up.set(-1, 0, 0).lerp(V(0, 1, 0), ease(range(e, 0, .7))).normalize();
-        shot.fov = lerp(fovDeg, 38, e);
+        const u = range(t, .6, 1);
+        const e1 = easeIO(range(u, 0, .55));                      // orbit from above to a front three-quarter view
+        const e2 = easeIO(range(u, .72, 1));                      // then push into the plate-reading lens
+        // front = −X (towards the traffic), logo side = +Z; almost level with the window, which is pitched down
+        const front = tmpA.set(-.86, portrait() ? .14 : .1, portrait() ? .42 : .5).normalize();
+        const dir = tmpB.set(0, 1, 0).lerp(front, e1).normalize();
+        shot.pos.copy(H).addScaledVector(dir, lerp(topDist(), portrait() ? 2.15 : 1.05, e1));
+        shot.pos.x -= .12 * (1 - e1);
+        // aim between the centre and the front face: lenses, IR array and side logo in one frame
+        shot.look.copy(H); shot.look.x -= .12 + .08 * e1; shot.look.y -= .03 * e1;
+        shot.up.set(-1, 0, 0).lerp(tmpA.set(0, 1, 0), ease(range(e1, 0, .6))).normalize();
+        shot.fov = fovDeg;
+        frameOffset(1 - e2);
+        if (e2 > 0) {
+          shot.pos.lerp(tmpA.copy(plateLens).addScaledVector(plateAxis, .06), e2);
+          shot.look.lerp(plateLens, e2);
+          shot.fov = lerp(fovDeg, 28, e2);
+        }
+        still = e2;
       }
-      const hover = 1 - ease(range(t, .55, .9)) * .75;
+      const hover = (1 - ease(range(t, .55, .9)) * .75) * (1 - still);
       shot.pos.x += wob(time * .6, 2) * .03 * hover; shot.pos.z += wob(time * .5, 9) * .03 * hover; shot.pos.y += wob(time * .45, 5) * .015 * hover;
-      shot.roll = wob(time * .4, 6) * .01 * hover + (t > .4 && t < .68 ? Math.sin(Math.PI * (t - .4) / .28) * .04 : 0);
+      shot.roll = wob(time * .4, 6) * .01 * hover + (t > .4 && t < .6 ? Math.sin(Math.PI * (t - .4) / .2) * .04 : 0);
     } else {
       // C — through the lens: ANPR feed (fixed mount, slow optical zoom)
       shot.pos.copy(lensWorld);
@@ -773,7 +845,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const dofW = ease(range(p, .53, .57)) * (1 - ease(range(p, .638, .642)));
     bokeh.enabled = !isLow && dofW > .01;
     if (bokeh.enabled) {
-      bokeh.uniforms.focus.value = camera.position.distanceTo(housingWorld);
+      bokeh.uniforms.focus.value = camera.position.distanceTo(shot.look);
       bokeh.uniforms.aperture.value = .006 * dofW;
     }
 
@@ -989,6 +1061,26 @@ function makeLogoTexture(renderer) {
   g.fillStyle = ring;
   for (const d of HRING) g.fill(new Path2D(d));
   g.restore();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
+}
+// standard Italian CCTV notice (generic pictogram, no authority named)
+function makeSignTexture(renderer) {
+  const c = document.createElement('canvas'); c.width = 250; c.height = 350; const g = c.getContext('2d');
+  g.fillStyle = '#f3f1ea'; g.fillRect(0, 0, 250, 350);
+  g.strokeStyle = '#1b1d20'; g.lineWidth = 6; g.strokeRect(9, 9, 232, 332);
+  g.fillStyle = '#1b1d20'; g.textAlign = 'center';
+  g.font = '800 30px "Inter Tight", Arial, sans-serif'; g.fillText('AREA', 125, 62);
+  g.font = '800 23px "Inter Tight", Arial, sans-serif'; g.fillText('VIDEOSORVEGLIATA', 125, 92, 214);
+  // camera pictogram: body, sunshield, bracket
+  g.save(); g.translate(125, 190); g.rotate(-.18);
+  roundRect(g, -62, -26, 112, 52, 8); g.fill();
+  g.fillRect(-70, -36, 128, 8);
+  g.beginPath(); g.moveTo(50, -18); g.lineTo(76, -30); g.lineTo(76, 30); g.lineTo(50, 18); g.closePath(); g.fill();
+  g.restore();
+  g.fillRect(112, 220, 14, 46); g.fillRect(92, 262, 54, 10);
+  g.font = '500 14px Arial, sans-serif'; g.fillStyle = '#3a3d42';
+  g.fillText('La registrazione è effettuata', 125, 300); g.fillText('per la sicurezza stradale', 125, 318);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
 }

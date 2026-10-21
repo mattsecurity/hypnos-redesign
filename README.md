@@ -10,7 +10,7 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 - **Sequenza 3D guidata dallo scroll** (`js/story.js`, Three.js 0.180):
   1. città dall'alto all'ora blu, auto che percorre il viale, traffico che si muove;
   2. zoom zenitale sull'auto (mirino HUD);
-  3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico, passaggio alle spalle della telecamera con profondità di campo;
+  3. volo fino al punto di controllo, discesa sulla telecamera ANPR montata sul palo dello spartitraffico (vista dall'alto col logo), giro fino alla vista frontale di tre quarti (obiettivi, LED IR, logo sul fianco) e ingresso nell'obiettivo targhe, con profondità di campo;
   4. "flash" e passaggio nel feed della telecamera: rilevamento veicolo, box targa, ritaglio targa, OCR carattere per carattere;
   5. dal transito al gestionale: targa, velocità rilevata, punto di controllo, transito registrato (solo dati illustrativi).
 - **Sezioni**: manifesto (parole che si accendono), soluzioni (galleria orizzontale fissata), sosta chiavi in mano (`js/parking.js`: Fornitura = foto del parcometro, poi dissolvenza sulla vista drone di una via vera (`parking-street.webp`); Installazione: il furgone arriva e il tecnico monta il parcometro; Segnaletica: stalli blu a 45° dipinti; Manutenzione: nuova visita del furgone; Gestione: poi auto che parcheggiano ed escono in retromarcia con distanze di sicurezza e precedenze), servizio integrato verbali (`js/pipeline.js`: pannello fissato allo scroll con 5 scene: apparecchiature, controllo velocità, gestione dei verbali, software, supporto), software (cruscotto live con transiti fittizi), metodo, azienda + gestione tributi, contatti (modulo che prepara una e-mail).
@@ -36,6 +36,7 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 - **Camera**: movimento da drone con rumore organico, leggero rollio in virata, micro-oscillazione del palo nel feed; motion blur sui movimenti rapidi; aloni dei lampioni; cielo dell'ora blu nelle inquadrature radenti.
 - Post-produzione: bloom, profondità di campo vicino alla telecamera, grading con grana/vignettatura, modalità "feed" (distorsione, aberrazione, linee).
 - **Telecamera ANPR** (`buildAnprCamera` in `js/story.js`): costruita in codice, nessun file da scaricare. Corpo in alluminio verniciato a polvere con smussi veri, parasole su distanziali, vetro frontale (solo riflessi) con obiettivo di lettura targhe trattato, obiettivo di contesto e LED IR; tappo posteriore con viti, pressacavi, LED di stato e targhetta; staffa a snodo, collare sul braccio e cavi che entrano nel braccio. Logo HYPNOS nuovo (stessi tracciati di `#hmark`/`#hword`, anello arancione) stampato sul parasole e sul fianco.
+- **Palo** (stesso file): plinto in cemento, piastra di base con tirafondi e fazzoletti, colletto, palo rastremato zincato, sportello d'ispezione, sbraccio con flangia e puntone, quadro elettrico con tettuccio, cerniere, serratura e tubo verso il palo, cartello "Area videosorvegliata"; varco nelle siepi davanti al palo.
 - Inquadrature della telecamera adattate allo schermo: su telefono più alte e spostate sopra la didascalia, su desktop a destra del testo.
 - Fallback a immagine statica se WebGL2 non è disponibile; qualità ridotta su mobile.
 
