@@ -520,6 +520,20 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const bokeh = new BokehPass(scene, camera, { focus: 5, aperture: .0004, maxblur: .016 });
   bokeh.enabled = false;
   composer.addPass(bokeh);
+  // phone GPUs can shade a few sub-pixel fragments (tiny cars, lamps seen from 250 m) as NaN / Inf: bloom grows each one
+  // into blocks and the camera motion blur smears them into dark shards, so the frame is sanitised before both
+  const sanitize = new ShaderPass({
+    uniforms: { tDiffuse: { value: null } },
+    vertexShader: `varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.); }`,
+    fragmentShader: /* glsl */`
+      uniform sampler2D tDiffuse; varying vec2 vUv;
+      void main(){
+        vec4 c = texture2D(tDiffuse, vUv);
+        if (any(isnan(c)) || any(isinf(c))) c = vec4(0., 0., 0., 1.);
+        gl_FragColor = vec4(min(max(c.rgb, vec3(0.)), vec3(64.)), 1.);
+      }`,
+  });
+  composer.addPass(sanitize);
   const bloom = new UnrealBloomPass(new THREE.Vector2(1, 1), .45, .45, 1.35);
   composer.addPass(bloom);
   const grade = new ShaderPass({
@@ -528,17 +542,18 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     fragmentShader: /* glsl */`
       uniform sampler2D tDiffuse; uniform float uTime, uFeed, uFlash, uVig; uniform vec2 uRes, uVel; varying vec2 vUv;
       float h(vec2 p){ return fract(sin(dot(p, vec2(12.9898,78.233))) * 43758.5453); }
+      vec3 fin(vec3 c){ return (any(isnan(c)) || any(isinf(c))) ? vec3(0.) : min(max(c, vec3(0.)), vec3(64.)); }
       void main(){
         vec2 uv = vUv; vec2 cc = uv - .5;
         // feed: slight barrel distortion + chromatic fringe
         float k = uFeed * .06; uv = .5 + cc * (1. + k * dot(cc, cc));
         vec2 off = cc * (.0012 + uFeed * .0025);
-        vec3 c = vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b);
+        vec3 c = fin(vec3(texture2D(tDiffuse, uv + off).r, texture2D(tDiffuse, uv).g, texture2D(tDiffuse, uv - off).b));
         // camera motion blur (180° shutter) on fast moves only
         float vl = length(uVel);
         if (vl > .0006) {
           vec3 acc = vec3(0.);
-          for (int i = 0; i < 9; i++) acc += texture2D(tDiffuse, uv + uVel * (float(i) / 8. - .5)).rgb;
+          for (int i = 0; i < 9; i++) acc += fin(texture2D(tDiffuse, uv + uVel * (float(i) / 8. - .5)).rgb);
           c = mix(c, acc / 9., smoothstep(.0006, .004, vl));
         }
         // feed grade: lifted blacks, slightly desaturated, cold

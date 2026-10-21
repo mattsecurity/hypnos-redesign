@@ -118,6 +118,11 @@ p { margin: 0; }
 .c.bl { left: 0; bottom: 0; border-right: 0; border-top: 0; } .c.br { right: 0; bottom: 0; border-left: 0; border-top: 0; }
 .reticle__tag { position: absolute; left: calc(100% + 14px); top: 0; white-space: nowrap; font: 500 10.5px/1.6 var(--f-mono); letter-spacing: .08em; display: grid; padding: 8px 10px; background: rgba(8,10,14,.55); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-left: 2px solid var(--accent); }
 .reticle__tag b { font-weight: 500; }
+/* where the tag sits is chosen per frame (main.js) from the free space around the box */
+.reticle[data-tag="below"] .reticle__tag { left: 0; top: calc(100% + 10px); }
+.reticle[data-tag="above"] .reticle__tag { left: 0; top: auto; bottom: calc(100% + 10px); }
+.reticle[data-tag="inside"] .reticle__tag { left: 10px; top: 10px; }
+.target.flip span { top: 20px; }
 .reticle__tag span { color: rgba(255,255,255,.6); }
 .target i { position: absolute; left: -9px; top: -9px; width: 18px; height: 18px; border-radius: 50%; border: 1.5px solid var(--accent); box-shadow: 0 0 0 6px rgba(226,88,97,.18); }
 .target i::after { content: ""; position: absolute; inset: -14px; border-radius: 50%; border: 1px solid rgba(226,88,97,.6); animation: ping 1.8s var(--ease) infinite; }
@@ -545,7 +550,6 @@ p { margin: 0; }
   .chapter--hero h1, .chapter--hero .lead, .chapter h2 { text-shadow: 0 2px 22px rgba(5,7,10,.55); }
   .chapter--hero h1 span { color: rgba(255,255,255,.62); }
   .scroll-hint { font-size: 10px; }
-  .reticle__tag { left: 0; top: calc(100% + 10px); }
   .feed__frame { inset: 76px 12px 40px; }
   .feed__top { top: 84px; left: 12px; right: 12px; padding: 0 10px; font-size: 9.5px; }
   .feed__top span:nth-child(2) { display: none; }
@@ -682,7 +686,6 @@ p { margin: 0; }
   .chapter--feed { bottom: 250px; }
   .logged { top: 140px; bottom: auto; right: calc(var(--gutter) + 18px); }
   .feed__top { padding-right: 0; }
-  .reticle__tag { left: 0; top: calc(100% + 10px); }
 }
 @media (max-width: 720px) and (max-height: 700px) {
   .pipeline__head h2 { font-size: 25px; }

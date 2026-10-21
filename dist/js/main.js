@@ -228,14 +228,40 @@ function drawPlateCrop(src) {
   g.putImageData(img, 0, 0);
 }
 
+// the reticle tag goes where there is room: right of the box, else below it (above the caption), else above it
+// (under the nav), else inside the box; it is also kept inside the screen sideways
+const reticleTag = $('.reticle__tag');
+const targetTag = $('#target span');
+function placeReticleTag(box) {
+  const W = innerWidth, m = 12, gap = 10;
+  const tw = reticleTag.offsetWidth, th = reticleTag.offsetHeight;
+  const navB = nav.offsetHeight + 8;
+  let capTop = Infinity;
+  for (const c of chapters) if (!c.classList.contains('chapter--hero') && parseFloat(c.style.opacity) > .02) capTop = Math.min(capTop, c.getBoundingClientRect().top);
+  let mode = 'inside';
+  if (box.x + box.w + 14 + tw <= W - m) mode = 'right';
+  else if (box.y + box.h + gap + th <= capTop - 12) mode = 'below';
+  else if (box.y - gap - th >= navB) mode = 'above';
+  if (reticle.dataset.tag !== mode) reticle.dataset.tag = mode;
+  const left = mode === 'right' ? box.x + box.w + 14 : box.x + (mode === 'inside' ? 10 : 0);
+  const shift = Math.min(0, W - m - (left + tw)) + Math.max(0, m - left);
+  reticleTag.style.transform = shift ? `translateX(${shift}px)` : '';
+}
+
 function onStoryFrame(h) {
   const p = h.p;
   // aerial reticle on the hero car
   const ro = ease(range(p, .31, .34)) * (1 - ease(range(p, .44, .47)));
-  if (ro > .01 && place(reticle, h.carBox)) reticle.style.opacity = ro; else reticle.style.opacity = 0;
-  // checkpoint marker
+  if (ro > .01 && place(reticle, h.carBox)) { reticle.style.opacity = ro; placeReticleTag(h.carBox); } else reticle.style.opacity = 0;
+  // checkpoint marker: when the label does not fit on the right it moves under the dot, kept inside the screen
   const to = ease(range(p, .465, .49)) * (1 - ease(range(p, .53, .55)));
-  if (to > .01 && h.pole) { target.style.opacity = to; target.style.transform = `translate3d(${h.pole.x}px, ${h.pole.y}px, 0)`; } else target.style.opacity = 0;
+  if (to > .01 && h.pole) {
+    target.style.opacity = to; target.style.transform = `translate3d(${h.pole.x}px, ${h.pole.y}px, 0)`;
+    const sw = targetTag.offsetWidth, m = 12;
+    const flip = h.pole.x + 18 + sw > innerWidth - m;
+    target.classList.toggle('flip', flip);
+    targetTag.style.left = flip ? `${Math.min(Math.max(h.pole.x - sw / 2, m), innerWidth - m - sw) - h.pole.x}px` : '';
+  } else target.style.opacity = 0;
   // feed
   const fo = ease(range(p, .646, .665)) * (1 - ease(range(p, .975, .998)));
   feed.style.opacity = fo;
