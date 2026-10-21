@@ -81,38 +81,25 @@ function updateNav() {
 /*  Intro: logo draws itself, then flies into the nav                */
 /* ================================================================ */
 const loader = $('#loader');
-const loaderBar = $('#loader-bar');
-// about one second: the six facets of the H snap together, the word wipes in, the orange ring spins into place.
-// The page never waits for the 3D scene: the hero opens on the aerial photo and the scene fades in when ready.
-const introTl = gsap.timeline({ paused: true })
-  .to(loader, { '--glow': 1, duration: .9, ease: 'power2.out' }, 0)
-  .from('.loader__mark .mk', { opacity: 0, x: i => [-34, 22, 40, -18, -40, 34][i], y: i => [34, -18, 28, -34, 12, -34][i], duration: .6, stagger: .035, ease: 'power3.out' }, 0)
-  .to('#hy-reveal-r', { attr: { width: 400 }, duration: .55, ease: 'power3.inOut' }, .25)
-  .from('.loader__word .rg', { rotation: -140, scale: .5, opacity: 0, svgOrigin: '289.4 36.65', duration: .7, ease: 'expo.out' }, .4)
-  .to('.loader__claim', { opacity: 1, duration: .4 }, .55)
-  .fromTo(loaderBar, { scaleX: 0 }, { scaleX: 1, duration: 1.05, ease: 'power2.inOut' }, 0);
-gsap.set('.brand', { opacity: 0 });
-introTl.play();
-const introDone = new Promise(r => introTl.eventCallback('onComplete', r));
+// No loading screen: the hero photo is on the page from the first paint (the 3D scene fades in over it later).
+// The night veil lifts with a slight pull-back, the logo assembles in the nav and the hero copy rises: under a second.
+gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint', '.chapter--hero > *'], { opacity: 0 });
+gsap.set(['.brand__mark .mk', '.brand__word .rg'], { opacity: 0 });
 
-async function outro() {
-  const logo = $('#loader-logo');
-  const target = $('.brand');
-  const a = logo.getBoundingClientRect();
-  const b = target.getBoundingClientRect();
-  const s = b.width / a.width;
-  const dx = (b.left + b.width / 2) - (a.left + a.width / 2);
-  const dy = (b.top + b.height / 2) - (a.top + a.height / 2);
+async function opening() {
+  document.body.classList.remove('is-loading');
+  lenis && lenis.start();
   const tl = gsap.timeline();
-  tl.to('.loader__meta', { opacity: 0, y: 6, duration: .25, ease: 'power2.in' })
-    .to(logo, { x: dx, y: dy, scale: s, duration: .75, ease: 'expo.inOut' }, '<.05')
-    .to(loader, { backgroundColor: 'rgba(7,9,13,0)', '--glow': 0, duration: .55, ease: 'power2.inOut' }, '<.2')
-    .set(target, { opacity: 1 })
-    .to(logo, { opacity: 0, duration: .15 })
-    .add(() => { loader.remove(); document.body.classList.remove('is-loading'); lenis && lenis.start(); }, '<')
-    .set('.chapter--hero', { opacity: 1 }, '<')
-    .fromTo('.chapter--hero > *', { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: .9, stagger: .07, ease: 'power3.out' }, '-=.6')
-    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, '<.15');
+  tl.to(loader, { opacity: 0, duration: .9, ease: 'power2.inOut' }, 0)
+    .fromTo(sticky, { '--open': 1.07 }, { '--open': 1, duration: 1.6, ease: 'expo.out' }, 0)
+    .fromTo('.brand__mark .mk', { opacity: 0, x: i => [-150, 90, 170, -80, -170, 140][i], y: i => [150, -80, 120, -150, 50, -150][i] },
+      { opacity: 1, x: 0, y: 0, duration: .75, stagger: .045, ease: 'expo.out' }, .05)
+    .fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .7, ease: 'power3.inOut' }, .2)
+    .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .4)
+    .set('.chapter--hero', { opacity: 1 }, 0)
+    .fromTo('.chapter--hero > *', { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .9, stagger: .07, ease: 'power3.out' }, .25)
+    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45)
+    .add(() => loader.remove(), .95);
   await tl;
 }
 
@@ -484,15 +471,14 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   fitFallback();
   addEventListener('resize', fitFallback);
   const storyReady = initStory();
-  await introDone;
-  // a short grace period lets a cached scene open directly in 3D; otherwise the photo carries the hero
-  await Promise.race([storyReady, wait(500)]);
-  if (document.fonts) await Promise.race([document.fonts.ready, wait(300)]);
+  // open as soon as the hero photo is decoded (a cached 3D scene gets a short grace period to open directly)
+  await Promise.race([fallbackImg.decode().catch(() => {}), wait(1200)]);
+  await Promise.race([Promise.all([storyReady, document.fonts ? document.fonts.ready : null]), wait(350)]);
   tick();
   sectionMotion();
   contactForm();
   gsap.ticker.add(tick);
-  await outro();
+  await opening();
   heroIntroDone = true;
   ScrollTrigger.refresh();
   window.__go = p => { const y = storyEl.offsetTop + p * storySpan(); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); };
