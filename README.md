@@ -35,6 +35,8 @@ Aprire http://127.0.0.1:4173. Debug: `window.__go(0.7)` salta a un punto della s
 - **Guidatore** (`js/driver.js`): avatar umano con scheletro, rivestito in abito scuro e camicia bianca (texture ricolorate), capelli corti aggiunti come guscio skinnato, seduto e messo in posa con IK analitica (mani sul volante, piedi sui pedali), micro-movimenti della testa.
 - **Camera**: movimento da drone con rumore organico, leggero rollio in virata, micro-oscillazione del palo nel feed; motion blur sui movimenti rapidi; aloni dei lampioni; cielo dell'ora blu nelle inquadrature radenti.
 - Post-produzione: bloom, profondità di campo vicino alla telecamera, grading con grana/vignettatura, modalità "feed" (distorsione, aberrazione, linee).
+- **Telecamera ANPR** (`buildAnprCamera` in `js/story.js`): costruita in codice, nessun file da scaricare. Corpo in alluminio verniciato a polvere con smussi veri, parasole su distanziali, vetro frontale (solo riflessi) con obiettivo di lettura targhe trattato, obiettivo di contesto e LED IR; tappo posteriore con viti, pressacavi, LED di stato e targhetta; staffa a snodo, collare sul braccio e cavi che entrano nel braccio. Logo HYPNOS nuovo (stessi tracciati di `#hmark`/`#hword`, anello arancione) stampato sul parasole e sul fianco.
+- Inquadrature della telecamera adattate allo schermo: su telefono più alte e spostate sopra la didascalia, su desktop a destra del testo.
 - Fallback a immagine statica se WebGL2 non è disponibile; qualità ridotta su mobile.
 
 ## Immagini generate (Codex image_gen)
@@ -44,7 +46,7 @@ Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Sosta: `pk-street` 
 ## Asset di terze parti
 
 - Auto: berlina dal repository https://github.com/ChenZongHeng/car (`data/benchi2.glb`, licenza MIT), compressa con glTF-Transform (Draco, WebP). Loghi e targa originale rimossi dalla texture (`assets/3d/sedan-atlas.jpg`); carrozzeria nera, cerchi e luci ridefiniti nel codice; targhe italiane fittizie aggiunte in 3D. Ombra di contatto dall'esempio Three.js `webgl_materials_car`.
-- Poly Haven (CC0): modello `security_camera_01`, HDRI `rooftop_night`, texture `asphalt_04` e `concrete_pavement_02` (lastre dei marciapiedi).
+- Poly Haven (CC0): HDRI `rooftop_night`, texture `asphalt_04` e `concrete_pavement_02` (lastre dei marciapiedi).
 - Guidatore: avatar Ready Player Me dagli esempi di three.js (`examples/models/gltf/readyplayer.me.glb`), alleggerito con glTF-Transform (rimossi cappello, baffi, denti e morph target) → `assets/3d/driver.glb`.
 - Three.js (MIT), GSAP + ScrollTrigger, Lenis.
 - Font: Inter, Inter Tight, JetBrains Mono (Google Fonts).

@@ -67,13 +67,12 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const hdrLoader = new HDRLoader(manager);
   const loadTex = (url, srgb = true) => new Promise((res, rej) => texLoader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, rej));
 
-  const [aerial, lod1, asph, env, carGltf, camGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex, paveD, paveN] = await Promise.all([
+  const [aerial, lod1, asph, env, carGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex, paveD, paveN] = await Promise.all([
     loadTex('assets/img/aerial.webp'),
     loadTex('assets/img/aerial-lod1.webp'),
     loadTex('assets/tex/asphalt_diff.jpg'),
     hdrLoader.loadAsync('assets/tex/rooftop_night_1k.hdr'),
     gltfLoader.loadAsync('assets/3d/sedan.glb'),
-    gltfLoader.loadAsync('assets/3d/camera/camera.gltf'),
     loadTex('assets/3d/car-shadow.png'),
     loadTex('assets/3d/sedan-atlas.jpg'),
     loadTex('assets/3d/sedan-atlas-n.jpg', false),
@@ -478,31 +477,10 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const cabinet = new THREE.Mesh(new RoundedBoxGeometry(.32, .5, .2, 3, .03), new THREE.MeshStandardMaterial({ color: 0x8e9398, metalness: .5, roughness: .45 }));
   cabinet.position.set(-.2, 2.4, 0); rig.add(cabinet);
 
-  const housing = new THREE.Group();
-  const camModel = camGltf.scene;
-  camModel.traverse(o => {
-    if (!o.isMesh) return;
-    const m = o.material; m.envMapIntensity = 1.25;
-    // new unit: clean powder-coated aluminium (the scan's texture is a weathered, plaster-like CCTV)
-    m.map = null; m.color.set(0xb9bdc2); m.metalness = .35; m.roughness = .38;
-    if (m.normalScale) m.normalScale.setScalar(.35);
-    m.roughnessMap = null; m.metalnessMap = null;
-  });
-  camModel.scale.setScalar(1.35);
-  housing.add(camModel);
-  // IR illuminator beside the housing (local +Z = lens direction, +X = south side)
-  const irBox = new THREE.Mesh(new RoundedBoxGeometry(.13, .11, .2, 3, .02), new THREE.MeshStandardMaterial({ color: 0x2a2d31, metalness: .4, roughness: .5 }));
-  irBox.position.set(-.2, .2, .2); housing.add(irBox);
-  const irLeds = new THREE.Mesh(new THREE.PlaneGeometry(.11, .085), new THREE.MeshStandardMaterial({ color: 0x150404, emissive: 0xff2a1a, emissiveIntensity: 1.8, map: makeLedTexture() }));
-  irLeds.position.set(-.2, .2, .301); housing.add(irLeds);
-  const irArm = new THREE.Mesh(new THREE.BoxGeometry(.12, .02, .05), new THREE.MeshStandardMaterial({ color: 0x8e9398, metalness: .6, roughness: .4 }));
-  irArm.position.set(-.13, .1, .15); housing.add(irArm);
-  // brand labels on the housing (side + top of the sunshield)
-  const labelMat = new THREE.MeshStandardMaterial({ map: makeLabelTexture(), transparent: true, roughness: .5, color: 0x3a3f45 });
-  const label = new THREE.Mesh(new THREE.PlaneGeometry(.2, .045), labelMat);
-  label.position.set(.0865 * 1.35 + .003, .2, .02); label.rotation.y = Math.PI / 2; housing.add(label);
-  const labelTop = new THREE.Mesh(new THREE.PlaneGeometry(.26, .058), labelMat);
-  labelTop.position.set(0, .2613 * 1.35 + .004, .0); labelTop.rotation.set(-Math.PI / 2, 0, -Math.PI / 2); housing.add(labelTop);
+  const armCap = new THREE.Mesh(new THREE.CircleGeometry(.05, 20), galv); armCap.position.set(0, POLE_H - .25, ARM_L); rig.add(armCap);
+
+  // ANPR unit (local +Z = lens direction, +X = south side, origin = tilt pivot on the bracket)
+  const housing = buildAnprCamera(renderer);
   // camera sits on top of the arm, looks west (−X) at incoming eastbound traffic, pitched down
   housing.rotation.order = 'YXZ';
   housing.rotation.y = -Math.PI / 2;
@@ -510,7 +488,31 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const HOUSING_POS = V(0, POLE_H - .25 + .045, ARM_L - .3);
   housing.position.copy(HOUSING_POS);
   rig.add(housing);
+  // pipe clamp + swivel stem on the arm (not tilted with the camera)
+  const mount = new THREE.Group(); mount.position.copy(HOUSING_POS); mount.rotation.y = -Math.PI / 2; rig.add(mount);
+  {
+    const steel = new THREE.MeshStandardMaterial({ color: 0x6f757c, metalness: .8, roughness: .38 });
+    const sleeve = new THREE.Mesh(new THREE.CylinderGeometry(.06, .06, .13, 28), steel); sleeve.rotation.z = Math.PI / 2; sleeve.position.y = -.045; mount.add(sleeve);
+    for (const x of [-.05, .05]) {
+      const band = new THREE.Mesh(new THREE.TorusGeometry(.061, .0045, 8, 32), steel); band.rotation.y = Math.PI / 2; band.position.set(x, -.045, 0); mount.add(band);
+      const lug = new THREE.Mesh(new THREE.BoxGeometry(.012, .018, .022), steel); lug.position.set(x, -.045, .066); mount.add(lug);
+    }
+    const stem = new THREE.Mesh(new THREE.CylinderGeometry(.02, .024, .05, 20), steel); stem.position.y = .02; mount.add(stem);
+    const knuckle = new THREE.Mesh(new THREE.CylinderGeometry(.018, .018, .07, 20), steel); knuckle.rotation.z = Math.PI / 2; knuckle.position.y = .045; mount.add(knuckle);
+  }
   rig.updateMatrixWorld(true);
+  // power + data cables: out of the rear glands, down into a grommet on top of the arm (pole side = mount −X)
+  {
+    const rubber = new THREE.MeshStandardMaterial({ color: 0x111214, roughness: .55 });
+    for (const gx of [-.03, .03]) {
+      const pts = [housing.localToWorld(V(gx, .165, -.325))];
+      for (const [x, y, z] of [[gx, .13, -.405], [gx * .5 - .05, .06, -.27], [-.12, .022, -.07 + gx * .5], [-.15, .006, gx * .25]]) pts.push(mount.localToWorld(V(x, y, z)));
+      const curve = new THREE.CatmullRomCurve3(pts.map(p => rig.worldToLocal(p)));
+      rig.add(new THREE.Mesh(new THREE.TubeGeometry(curve, 48, .0055, 8), rubber));
+    }
+    const grommet = new THREE.Mesh(new THREE.CylinderGeometry(.018, .02, .012, 16), rubber);
+    grommet.position.copy(rig.worldToLocal(mount.localToWorld(V(-.15, .003, 0)))); rig.add(grommet);
+  }
   const lensWorld = housing.localToWorld(V(0, .2, .42)).clone();        // just in front of the window
   const housingWorld = housing.localToWorld(V(0, .2, 0)).clone();
 
@@ -609,7 +611,17 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   }
 
   const shot = { pos: V(), look: V(), up: V(0, 0, -1), fov: fovDeg, roll: 0 };
-  const lookOverShoulder = V(POLE.x - 26, 0, CAR_Z);
+  // top-down shot on the ANPR unit: high enough to hold the whole unit and its logo
+  const topDist = () => (portrait() ? 2.35 : 1.6);
+  // ...and framed clear of the captions: higher up on phones (caption at the bottom), right of the text on wide screens
+  function topOffset(upVec, w) {
+    if (w <= 0) return;
+    const d = topDist() - .1, visH = 2 * d * Math.tan(THREE.MathUtils.degToRad(fovDeg / 2)), visW = visH * aspect;
+    const sUp = portrait() ? .16 * visH : 0, sRight = portrait() ? 0 : .07 * visW;
+    // screen right while looking straight down = (−up.z, 0, up.x)
+    const ox = -(upVec.x * sUp - upVec.z * sRight) * w, oz = -(upVec.z * sUp + upVec.x * sRight) * w;
+    shot.pos.x += ox; shot.pos.z += oz; shot.look.x += ox; shot.look.z += oz;
+  }
 
   function computeShot(p, time) {
     const cx = carX(p);
@@ -649,20 +661,25 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
         shot.up.set(1, 0, 0);
       } else if (t < .68) {
         const e = easeIO((t - .4) / .28);
-        const alt = lerp(8.8, H.y + 1.25, e);
+        const alt = lerp(8.8, H.y + topDist(), e);
         shot.pos.set(H.x - .25 * (1 - e) - .12 * e, alt, H.z);
         shot.look.set(shot.pos.x, H.y, H.z);
         const phi = Math.PI * e;                                  // turn around to face the traffic
         shot.up.set(Math.cos(phi), 0, Math.sin(phi));
+        topOffset(shot.up, e);
       } else {
         const e = easeIO((t - .68) / .32);
-        const theta = lerp(0, 1.2, e);                            // polar angle from vertical
-        const r = lerp(1.25, 1.0, e);
-        const dir = tmpA.set(Math.sin(theta), Math.cos(theta), Math.sin(theta) * .12).normalize();
+        const theta = lerp(0, portrait() ? 1.08 : 1.2, e);        // polar angle from vertical
+        const r = lerp(topDist(), portrait() ? 1.55 : 1.12, e);
+        // a little to the south on wide screens (unit on the right); on the unit's axis on phones (narrow horizontal field)
+        const dir = tmpA.set(Math.sin(theta), Math.cos(theta), Math.sin(theta) * (portrait() ? -.03 : .12)).normalize();
         shot.pos.copy(H).addScaledVector(dir, r);
         shot.pos.x -= .12 * (1 - e);
-        const roadPt = tmpB.set(POLE.x - 16, 0, H.z + 1.1).lerp(H, .2);
-        shot.look.copy(H).lerp(roadPt, ease(range(e, .15, 1)));
+        shot.look.copy(H);
+        topOffset(V(-1, 0, 0), 1 - ease(e));
+        // over the shoulder: the unit sits bottom-right on wide screens, bottom-centre on phones
+        const roadPt = tmpB.set(POLE.x - 16, 0, H.z + (portrait() ? .2 : 1.1)).lerp(H, .2);
+        shot.look.lerp(roadPt, ease(range(e, .15, 1)));
         shot.up.set(-1, 0, 0).lerp(V(0, 1, 0), ease(range(e, 0, .7))).normalize();
         shot.fov = lerp(fovDeg, 38, e);
       }
@@ -835,23 +852,145 @@ function makePlateTexture(renderer) {
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
 }
-function makeLedTexture() {
-  const c = document.createElement('canvas'); c.width = 128; c.height = 88; const g = c.getContext('2d');
-  g.fillStyle = '#111'; g.fillRect(0, 0, 128, 88);
-  for (let y = 0; y < 4; y++) for (let x = 0; x < 6; x++) { const gr = g.createRadialGradient(14 + x * 20, 14 + y * 20, 1, 14 + x * 20, 14 + y * 20, 8); gr.addColorStop(0, '#fff'); gr.addColorStop(1, '#300'); g.fillStyle = gr; g.beginPath(); g.arc(14 + x * 20, 14 + y * 20, 7, 0, 7); g.fill(); }
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+/* ------------------------------------------------------------------ */
+/*  ANPR camera: powder-coated aluminium body, sunshield on standoffs,  */
+/*  front window with coated plate lens, context lens and IR LEDs,      */
+/*  rear cap with glands, tilt bracket. Origin = tilt pivot.            */
+/* ------------------------------------------------------------------ */
+const CAM = { W: .2, H: .15, Z0: -.3, Z1: .32, CY: .2 };
+function roundedRect(w, h, r, path = new THREE.Shape()) {
+  const x = -w / 2, y = -h / 2;
+  path.moveTo(x + r, y); path.lineTo(x + w - r, y); path.quadraticCurveTo(x + w, y, x + w, y + r);
+  path.lineTo(x + w, y + h - r); path.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  path.lineTo(x + r, y + h); path.quadraticCurveTo(x, y + h, x, y + h - r);
+  path.lineTo(x, y + r); path.quadraticCurveTo(x, y, x + r, y);
+  return path;
 }
-function makeLabelTexture() {
-  const c = document.createElement('canvas'); c.width = 512; c.height = 116; const g = c.getContext('2d');
-  g.fillStyle = 'rgba(235,236,238,.92)';
-  g.font = '700 70px "Inter Tight", Arial, sans-serif'; g.textBaseline = 'middle'; g.fillText('HYPNOS', 96, 62);
-  // mini H mark
-  g.strokeStyle = 'rgba(235,236,238,.92)'; g.lineWidth = 9; g.lineJoin = 'miter';
-  g.beginPath(); const s = 2.6, ox = 6, oy = 18;
-  [[10.5, 14], [10.5, 22.75], [3.5, 22.75], [3.5, 2.25], [10.5, 2.25], [10.5, 9.5], [20.5, 9.5], [20.5, 22.75], [28.5, 22.75], [28.5, 2.25], [22, 2.25]]
-    .forEach(([x, y], i) => (i ? g.lineTo : g.moveTo).call(g, ox + x * s, oy + y * s));
-  g.stroke();
-  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; return t;
+function noiseTexture(size, lo, hi, repeat) {
+  const c = document.createElement('canvas'); c.width = c.height = size; const g = c.getContext('2d');
+  const img = g.createImageData(size, size);
+  // two octaves of value noise: soft mottling of the powder coat + fine orange-peel grain
+  const cell = 16, grid = Array.from({ length: (size / cell + 1) ** 2 }, Math.random);
+  const at = (i, j) => grid[(j % (size / cell)) * (size / cell + 1) + (i % (size / cell))];
+  for (let y = 0; y < size; y++) for (let x = 0; x < size; x++) {
+    const fx = x / cell, fy = y / cell, i = Math.floor(fx), j = Math.floor(fy), u = fx - i, v = fy - j;
+    const s = u * u * (3 - 2 * u), t = v * v * (3 - 2 * v);
+    const n = (at(i, j) * (1 - s) + at(i + 1, j) * s) * (1 - t) + (at(i, j + 1) * (1 - s) + at(i + 1, j + 1) * s) * t;
+    const val = lo + (hi - lo) * (n * .45 + Math.random() * .55);
+    const k = (y * size + x) * 4; img.data[k] = img.data[k + 1] = img.data[k + 2] = val * 255; img.data[k + 3] = 255;
+  }
+  g.putImageData(img, 0, 0);
+  const tex = new THREE.CanvasTexture(c); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(repeat, repeat);
+  return tex;
+}
+function buildAnprCamera(renderer) {
+  const { W, H, Z0, Z1, CY } = CAM;
+  const cam = new THREE.Group();
+  const add = (geo, mat, x = 0, y = 0, z = 0) => { const m = new THREE.Mesh(geo, mat); m.position.set(x, y, z); cam.add(m); return m; };
+  const mottle = noiseTexture(256, .97, 1, 3); mottle.colorSpace = THREE.SRGBColorSpace;
+  const powder = new THREE.MeshPhysicalMaterial({ color: 0xe6e8ea, map: mottle, roughness: 1, roughnessMap: noiseTexture(256, .4, .52, 14), metalness: 0, clearcoat: .3, clearcoatRoughness: .32, envMapIntensity: 1.1 });
+  const shieldMat = powder.clone(); shieldMat.color.set(0xdfe2e5);
+  const satin = new THREE.MeshStandardMaterial({ color: 0x1a1c1f, roughness: .42, metalness: .25 });
+  const steel = new THREE.MeshStandardMaterial({ color: 0x8b9096, metalness: .9, roughness: .3 });
+  const black = new THREE.MeshStandardMaterial({ color: 0x070809, roughness: .55 });
+
+  // body: extruded rounded section with real bevels (catches the lamp light on every edge)
+  const bev = .007;
+  const bodyGeo = new THREE.ExtrudeGeometry(roundedRect(W - 2 * bev, H - 2 * bev, .024), { depth: Z1 - Z0 - 2 * bev, bevelEnabled: true, bevelThickness: bev, bevelSize: bev, bevelSegments: 4, curveSegments: 10 });
+  bodyGeo.translate(0, CY, Z0 + bev);
+  add(bodyGeo, powder);
+
+  // front: satin bezel, dark backplate, plate-reading lens, context lens, IR LED array, window glass
+  const bezelShape = roundedRect(W - .01, H - .01, .02); bezelShape.holes.push(roundedRect(W - .036, H - .036, .01, new THREE.Path()));
+  const bezelGeo = new THREE.ExtrudeGeometry(bezelShape, { depth: .009, bevelEnabled: true, bevelThickness: .0015, bevelSize: .0015, bevelSegments: 2, curveSegments: 8 });
+  add(bezelGeo, satin, 0, CY, Z1 - .002);
+  add(new THREE.ShapeGeometry(roundedRect(W - .034, H - .034, .01)), new THREE.MeshStandardMaterial({ color: 0x050607, roughness: .7 }), 0, CY, Z1 + .0008);
+  const lensCoat = new THREE.MeshPhysicalMaterial({ color: 0x0a0c16, metalness: .3, roughness: .06, clearcoat: 1, iridescence: 1, iridescenceIOR: 1.9, iridescenceThicknessRange: [260, 620], envMapIntensity: 2.2 });
+  const disc = (r, h, mat, x, y, z) => { const m = add(new THREE.CylinderGeometry(r, r, h, 36), mat, x, y, z); m.rotation.x = Math.PI / 2; return m; };
+  disc(.034, .004, steel, .036, CY - .004, Z1 + .002);
+  disc(.03, .0045, black, .036, CY - .004, Z1 + .0025);
+  disc(.023, .005, lensCoat, .036, CY - .004, Z1 + .003);
+  disc(.014, .004, steel, -.056, CY + .027, Z1 + .002);
+  disc(.0095, .005, lensCoat, -.056, CY + .027, Z1 + .0028);
+  {
+    const ledMat = new THREE.MeshStandardMaterial({ color: 0x1a0606, roughness: .3, emissive: 0x9a1408, emissiveIntensity: 1.1 });
+    const led = new THREE.SphereGeometry(.0042, 10, 6); led.scale(1, 1, .45);
+    const leds = new THREE.InstancedMesh(led, ledMat, 12); const m = new THREE.Matrix4(); let k = 0;
+    for (let j = 0; j < 3; j++) for (let i = 0; i < 4; i++) { m.makeTranslation(-.078 + i * .0145, CY - .036 + j * .0135, Z1 + .002); leds.setMatrixAt(k++, m); }
+    cam.add(leds);
+  }
+  // window: reflections only (additive), so the lens stays visible behind it
+  add(new THREE.ShapeGeometry(roundedRect(W - .034, H - .034, .01)), new THREE.MeshPhysicalMaterial({ color: 0x000000, roughness: .025, clearcoat: 1, envMapIntensity: 1.6, transparent: true, blending: THREE.AdditiveBlending, depthWrite: false }), 0, CY, Z1 + .0062);
+
+  // sunshield: thin folded sheet with side skirts, on four standoffs, overhanging the window
+  const TOP = CY + H / 2 + .016, SW = .244, t = .0045, sk = .052, r1 = .012, r2 = .0075;
+  const sec = new THREE.Shape();
+  sec.moveTo(-SW / 2, TOP - sk); sec.lineTo(-SW / 2, TOP + t - r1); sec.quadraticCurveTo(-SW / 2, TOP + t, -SW / 2 + r1, TOP + t);
+  sec.lineTo(SW / 2 - r1, TOP + t); sec.quadraticCurveTo(SW / 2, TOP + t, SW / 2, TOP + t - r1); sec.lineTo(SW / 2, TOP - sk);
+  sec.lineTo(SW / 2 - t, TOP - sk); sec.lineTo(SW / 2 - t, TOP - r2); sec.quadraticCurveTo(SW / 2 - t, TOP, SW / 2 - t - r2, TOP);
+  sec.lineTo(-SW / 2 + t + r2, TOP); sec.quadraticCurveTo(-SW / 2 + t, TOP, -SW / 2 + t, TOP - r2); sec.lineTo(-SW / 2 + t, TOP - sk);
+  const shieldGeo = new THREE.ExtrudeGeometry(sec, { depth: .7, bevelEnabled: true, bevelThickness: .0015, bevelSize: .0012, bevelSegments: 2, curveSegments: 6 });
+  shieldGeo.translate(0, 0, -.315);
+  add(shieldGeo, shieldMat);
+  for (const x of [-.062, .062]) for (const z of [-.2, .21]) {
+    add(new THREE.CylinderGeometry(.007, .007, TOP - (CY + H / 2), 12), steel, x, (TOP + CY + H / 2) / 2, z);
+    add(new THREE.CylinderGeometry(.0065, .0065, .003, 16), steel, x, TOP + t + .0015, z);
+  }
+
+  // rear cap: screwed plate, two cable glands, status LED, rating plate
+  const capGeo = new THREE.ExtrudeGeometry(roundedRect(W - .028, H - .028, .016), { depth: .004, bevelEnabled: false, curveSegments: 8 });
+  add(capGeo, satin, 0, CY, Z0 - .004);
+  for (const sx of [-1, 1]) for (const sy of [-1, 1]) disc(.0045, .003, steel, sx * (W / 2 - .028), CY + sy * (H / 2 - .028), Z0 - .0055);
+  for (const gx of [-.03, .03]) {
+    disc(.012, .01, steel, gx, CY - .035, Z0 - .009).geometry = new THREE.CylinderGeometry(.012, .012, .01, 6);
+    disc(.0085, .014, black, gx, CY - .035, Z0 - .02);
+  }
+  add(new THREE.SphereGeometry(.0028, 10, 8), new THREE.MeshStandardMaterial({ color: 0x062a10, emissive: 0x2cff6a, emissiveIntensity: 2.2 }), .05, CY + .042, Z0 - .0045);
+  const plate = add(new THREE.PlaneGeometry(.07, .028), new THREE.MeshStandardMaterial({ color: 0x7d8288, metalness: .45, roughness: .55 }), -.01, CY + .03, Z0 - .0042);
+  plate.rotation.y = Math.PI;
+
+  // tilt bracket under the body: plate, two ears, through-bolt with knobs (pivot at the origin)
+  add(new THREE.BoxGeometry(.09, .01, .18), steel, 0, CY - H / 2 - .005, 0);
+  for (const x of [-.039, .039]) add(new THREE.BoxGeometry(.006, .08, .05), steel, x, (CY - H / 2 + .045) / 2, 0);
+  const bolt = add(new THREE.CylinderGeometry(.008, .008, .096, 12), steel, 0, .045, 0); bolt.rotation.z = Math.PI / 2;
+  for (const x of [-.05, .05]) { const k = add(new THREE.CylinderGeometry(.015, .015, .009, 8), black, x, .045, 0); k.rotation.z = Math.PI / 2; }
+
+  // HYPNOS logo printed on the sunshield and on the south side of the body
+  const logo = new THREE.MeshStandardMaterial({ map: makeLogoTexture(renderer), transparent: true, roughness: .4, depthWrite: false, polygonOffset: true, polygonOffsetFactor: -2 });
+  const top = add(new THREE.PlaneGeometry(.36, .36 / LOGO_ASPECT), logo, 0, TOP + t + .0022, .03);
+  top.rotation.set(-Math.PI / 2, 0, -Math.PI / 2);
+  const side = add(new THREE.PlaneGeometry(.22, .22 / LOGO_ASPECT), logo, W / 2 + .0006, CY, .02);
+  side.rotation.y = Math.PI / 2;
+  return cam;
+}
+
+// new HYPNOS lockup: faceted H mark + wordmark with the orange O ring (same paths as #hmark / #hword in index.html)
+const HMARK = ['M256 356L177 356L177 563L118 564L116 524L13 622L256 622Z', 'M177 90L177 268L372 268L374 462L437 527L437 210L230 210L230 145Z', 'M512 73L512 616L374 478L374 622L627 622L627 187Z', 'M106 0L230 128L230 0Z', 'M91 0L0 0L0 616L116 508L116 27Z', 'M627 170L627 0L399 0L399 58L513 58Z'];
+const HWORD = ['M0 9H14V31H54.5V9H68V64H54.5V41.5H14V70.4L0 61.1Z', 'M63.9 9H79.2L99.4 30.6L121 9H136.7L106 39.7V70.5L92.5 61.5V39.4Z', 'M136.7 9H163.4A17.1 17.1 0 0 1 163.4 43.2H140.2V61.7L127.2 70.6V37.5L132 32.7H163.4A6.5 6.5 0 0 0 163.4 19.7H126Z', 'M183.8 64V18A9 9 0 0 1 192.8 9H196.3L232.7 47.8V9H244.5V57A7 7 0 0 1 237.5 64H232.7L195.8 24.5V64Z', 'M396 9V19.7H349.5A5.65 5.65 0 0 0 349.5 31H381A16.5 16.5 0 0 1 381 64H325.8L332.5 52.8H381A5.7 5.7 0 0 0 381 41.4H349.5A16.2 16.2 0 0 1 349.5 9Z'];
+const HRING = [
+  'M255.97 18.35L257.02 16.73L258.15 15.16L259.37 13.65L260.67 12.20L262.05 10.82L263.50 9.51L265.03 8.27L266.61 7.11L268.26 6.02L269.97 5.02L271.73 4.11L273.54 3.28L275.39 2.55L277.27 1.90L279.19 1.35L281.14 0.90L283.11 0.54L285.10 0.28L287.10 0.12L289.10 0.05L291.11 0.09L293.11 0.22L295.10 0.45L297.07 0.78L299.03 1.21L300.96 1.73L302.85 2.35L304.72 3.05L306.54 3.85L308.31 4.74L310.03 5.72L311.70 6.78L313.31 7.91L314.85 9.13L316.32 10.42L317.72 11.78L319.05 13.21L320.29 14.70L321.45 16.25L322.53 17.86L323.51 19.52L324.40 21.22L325.20 22.97L325.90 24.75L326.50 26.56L327.01 28.40L327.41 30.27L327.71 32.15L327.90 34.04L327.99 35.94L327.98 37.84L327.86 39.74L327.64 41.63L327.32 43.51L326.89 45.37L326.36 47.20L325.73 49.01L325.01 50.78L324.18 52.52L323.27 54.21L322.26 55.85L321.16 57.44L319.98 58.98L318.72 60.46L317.37 61.87L315.95 63.21L314.46 64.49L312.90 65.68L311.28 66.80L309.60 67.84L307.86 68.79L306.08 69.66L304.25 70.43L302.38 71.12L300.47 71.71L298.53 72.21L296.57 72.61L294.59 72.92L292.60 73.12L290.60 73.23L288.59 73.24L286.59 73.15L284.59 72.96L282.61 72.68L280.64 72.30L278.70 71.82L276.79 71.24L274.91 70.57L273.07 69.81L271.28 68.97L271.28 68.97L273.41 69.13L275.40 69.43L277.36 69.69L279.29 69.89L281.20 70.02L283.10 70.07L284.98 70.04L286.84 69.94L288.67 69.75L290.47 69.49L292.25 69.15L293.99 68.73L295.70 68.24L297.37 67.68L299.00 67.05L300.58 66.35L302.12 65.59L303.60 64.76L305.04 63.87L306.42 62.93L307.74 61.92L309.01 60.87L310.21 59.76L311.35 58.61L312.43 57.42L313.45 56.18L314.39 54.90L315.27 53.59L316.08 52.24L316.82 50.86L317.49 49.46L318.08 48.03L318.61 46.58L319.06 45.12L319.43 43.63L319.73 42.14L319.96 40.63L320.11 39.12L320.19 37.60L320.19 36.08L320.12 34.57L319.97 33.06L319.74 31.55L319.44 30.06L319.06 28.59L318.60 27.13L318.07 25.69L317.47 24.28L316.79 22.89L316.04 21.54L315.22 20.22L314.34 18.93L313.38 17.69L312.36 16.49L311.28 15.33L310.14 14.22L308.94 13.17L307.68 12.16L306.36 11.22L305.00 10.33L303.58 9.50L302.12 8.74L300.62 8.05L299.07 7.42L297.49 6.86L295.88 6.37L294.23 5.96L292.56 5.62L290.86 5.36L289.14 5.18L287.41 5.08L285.66 5.06L283.91 5.12L282.15 5.26L280.39 5.48L278.63 5.79L276.88 6.18L275.14 6.66L273.41 7.21L271.71 7.85L270.02 8.57L268.37 9.38L266.74 10.26L265.14 11.22L263.57 12.25L262.04 13.36L260.54 14.55L259.07 15.79L257.60 17.09L255.97 18.35Z',
+  'M282.70 72.69L281.62 72.50L280.54 72.27L279.47 72.02L278.42 71.74L277.37 71.43L276.32 71.09L275.29 70.72L274.28 70.32L273.27 69.90L272.28 69.45L271.30 68.98L270.33 68.47L269.38 67.95L268.45 67.39L267.54 66.81L266.64 66.21L265.76 65.58L264.90 64.93L264.06 64.26L263.24 63.56L262.44 62.84L261.66 62.11L260.91 61.35L260.18 60.57L259.47 59.77L258.79 58.95L258.13 58.11L257.50 57.26L256.89 56.39L256.31 55.50L255.76 54.60L255.23 53.68L254.74 52.75L254.27 51.81L253.82 50.85L253.41 49.89L253.03 48.91L252.68 47.92L252.35 46.92L252.06 45.92L251.79 44.90L251.56 43.88L251.36 42.86L251.19 41.83L251.05 40.79L250.94 39.76L250.86 38.71L250.82 37.67L250.80 36.63L250.82 35.59L250.86 34.54L250.94 33.50L251.05 32.46L251.19 31.43L251.37 30.40L251.57 29.37L251.84 28.36L252.16 27.36L252.51 26.38L252.90 25.41L253.33 24.45L253.79 23.51L254.28 22.58L254.81 21.68L255.36 20.79L255.95 19.93L256.56 19.08L257.20 18.25L257.86 17.45L258.55 16.67L259.26 15.91L260.00 15.18L260.76 14.47L261.54 13.79L262.34 13.14L263.15 12.51L263.99 11.90L264.84 11.33L265.71 10.78L266.59 10.26L267.49 9.77L268.40 9.31L269.32 8.87L270.25 8.47L271.18 8.09L272.13 7.75L273.09 7.43L274.04 7.15L275.01 6.89L275.98 6.67L275.98 6.67L275.25 7.40L274.47 7.96L273.68 8.49L272.89 9.02L272.12 9.56L271.36 10.10L270.60 10.65L269.87 11.22L269.14 11.80L268.44 12.39L267.74 13.00L267.07 13.62L266.41 14.26L265.77 14.91L265.14 15.57L264.54 16.25L263.95 16.95L263.38 17.65L262.84 18.37L262.31 19.11L261.81 19.85L261.33 20.61L260.87 21.38L260.43 22.17L260.01 22.96L259.62 23.76L259.26 24.58L258.92 25.40L258.60 26.23L258.32 27.07L258.06 27.92L257.83 28.78L257.63 29.64L257.47 30.51L257.36 31.38L257.28 32.26L257.22 33.14L257.18 34.01L257.17 34.89L257.18 35.76L257.20 36.63L257.25 37.50L257.32 38.37L257.42 39.23L257.53 40.09L257.66 40.95L257.82 41.80L258.00 42.65L258.19 43.50L258.41 44.34L258.65 45.18L258.91 46.01L259.18 46.83L259.47 47.66L259.78 48.47L260.11 49.29L260.46 50.09L260.83 50.89L261.21 51.69L261.62 52.48L262.04 53.26L262.48 54.04L262.94 54.81L263.42 55.57L263.92 56.33L264.44 57.08L264.98 57.82L265.54 58.55L266.11 59.28L266.71 59.99L267.32 60.70L267.96 61.40L268.61 62.09L269.29 62.77L269.98 63.44L270.70 64.10L271.43 64.74L272.19 65.38L272.96 66.01L273.75 66.63L274.57 67.23L275.40 67.83L276.25 68.41L277.12 68.99L278.01 69.56L278.92 70.12L279.85 70.69L280.79 71.26L281.75 71.87L282.70 72.69Z',
+];
+const LOGO_ASPECT = 1180 / 256;
+function makeLogoTexture(renderer) {
+  const c = document.createElement('canvas'); c.width = 1180; c.height = 256; const g = c.getContext('2d');
+  const ink = '#24282e';
+  // mark: 627×622 units → 196 px tall
+  g.save(); g.translate(24, 30); g.scale(196 / 622, 196 / 622); g.fillStyle = ink;
+  for (const d of HMARK) g.fill(new Path2D(d));
+  g.restore();
+  // wordmark: letters 0.6× the mark height, baseline aligned with the mark's foot
+  const s = 2.1;
+  g.save(); g.translate(270, 226 - 64 * s); g.scale(s, s); g.fillStyle = ink;
+  for (const d of HWORD) g.fill(new Path2D(d));
+  // the O: orange ring (two crescents, gradient as in the site's #hy-ring)
+  const ring = g.createLinearGradient(251, 0, 328, 73);
+  [[0, '#ffa062'], [.45, '#f26a21'], [.8, '#d9501a'], [1, '#f68a46']].forEach(([o, col]) => ring.addColorStop(o, col));
+  g.fillStyle = ring;
+  for (const d of HRING) g.fill(new Path2D(d));
+  g.restore();
+  const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
+  return t;
 }
 function roundRect(g, x, y, w, h, r, c = [1, 1, 1, 1]) {
   g.beginPath();
