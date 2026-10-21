@@ -13,13 +13,13 @@
 <link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter+Tight:wght@400;500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/main.css">
+<link rel="stylesheet" href="css/main.css?v=20261021b">
 <link rel="preload" href="assets/img/aerial.webp" as="image">
 <script type="importmap">{"imports":{"three":"./vendor/three/three.module.js","three/addons/":"./vendor/three/addons/"}}</script>
 <script src="vendor/gsap/gsap.min.js" defer></script>
 <script src="vendor/gsap/ScrollTrigger.min.js" defer></script>
 <script src="vendor/lenis/lenis.min.js" defer></script>
-<script type="module" src="js/main.js"></script>
+<script type="module" src="js/main.js?v=20261021b"></script>
 </head>
 <body class="is-loading">
 
@@ -27,8 +27,6 @@
   <defs><linearGradient id="hy-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffa062"/><stop offset=".45" stop-color="#f26a21"/><stop offset=".8" stop-color="#d9501a"/><stop offset="1" stop-color="#f68a46"/></linearGradient></defs>
   <!-- HYPNOS mark (new H) -->
   <symbol id="hmark" viewBox="0 0 627 622"><g fill="currentColor"><path d="M256 356L177 356L177 563L118 564L116 524L13 622L256 622Z"/><path d="M177 90L177 268L372 268L374 462L437 527L437 210L230 210L230 145Z"/><path d="M512 73L512 616L374 478L374 622L627 622L627 187Z"/><path d="M106 0L230 128L230 0Z"/><path d="M91 0L0 0L0 616L116 508L116 27Z"/><path d="M627 170L627 0L399 0L399 58L513 58Z"/></g></symbol>
-  <!-- certification seal: neutral globe (not the ISO trademark) -->
-  <symbol id="seal" viewBox="0 0 64 64"><g fill="none" stroke="currentColor" stroke-width="1.2"><circle cx="32" cy="32" r="30.5"/><circle cx="32" cy="32" r="25" opacity=".45"/><ellipse cx="32" cy="32" rx="10" ry="25" opacity=".3"/><ellipse cx="32" cy="32" rx="19" ry="25" opacity=".3"/><path d="M7 32H57M10 20H54M10 44H54" opacity=".3"/></g></symbol>
   <!-- certification badge: path for the text around the ring -->
   <path id="cb-ring" d="M19 100a81 81 0 1 1 162 0a81 81 0 1 1-162 0"/>
   <!-- HYPNOS wordmark: letters follow the text colour, the O ring is always orange -->
@@ -404,14 +402,6 @@
       <h2 class="split">Tecnologia al servizio di chi si prende cura della città.</h2>
       <p>Ci rivolgiamo a Comandanti, Funzionari e Operatori di Polizia Locale, con un ricco assortimento di servizi: dal noleggio alla vendita, fino al supporto tecnico dei gestionali progettati. Dalla presentazione di prodotti e servizi per l’attività in ufficio e in strada, fino all’installazione.</p>
       <ul class="audience"><li>Comandanti</li><li>Funzionari</li><li>Operatori di Polizia Locale</li><li>Comuni ed Enti locali</li></ul>
-      <div class="certs" aria-labelledby="certs-title">
-        <p class="eyebrow eyebrow--light" id="certs-title">Sistemi di gestione certificati</p>
-        <ul class="certs__list">
-          <li><a href="#certificazioni"><span class="seal"><svg aria-hidden="true"><use href="#seal"/></svg><b>ISO</b><i>9001</i></span><p><b>ISO 9001</b><span>Gestione della qualità</span></p></a></li>
-          <li><a href="#certificazioni"><span class="seal"><svg aria-hidden="true"><use href="#seal"/></svg><b>ISO</b><i>14001</i></span><p><b>ISO 14001</b><span>Gestione ambientale</span></p></a></li>
-          <li><a href="#certificazioni"><span class="seal"><svg aria-hidden="true"><use href="#seal"/></svg><b>ISO</b><i>27001</i></span><p><b>ISO/IEC 27001</b><span>Sicurezza delle informazioni</span></p></a></li>
-        </ul>
-      </div>
     </div>
     <aside class="tributi">
       <span class="tributi__tag">Anche</span>
@@ -436,7 +426,7 @@
     <div class="certsec__grid">
       <article class="cert" data-cert>
         <div class="cert__face">
-          <svg class="cbadge" viewBox="0 0 200 200" aria-hidden="true">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
             <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
             <circle class="cbadge__band" cx="100" cy="100" r="81"/>
             <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">SISTEMA DI GESTIONE PER LA QUALITÀ · CERTIFICATO ·</textPath></text></g>
@@ -462,7 +452,7 @@
       </article>
       <article class="cert" data-cert>
         <div class="cert__face">
-          <svg class="cbadge" viewBox="0 0 200 200" aria-hidden="true">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
             <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
             <circle class="cbadge__band" cx="100" cy="100" r="81"/>
             <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">SISTEMA DI GESTIONE AMBIENTALE · CERTIFICATO ·</textPath></text></g>
@@ -488,7 +478,7 @@
       </article>
       <article class="cert" data-cert>
         <div class="cert__face">
-          <svg class="cbadge" viewBox="0 0 200 200" aria-hidden="true">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
             <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
             <circle class="cbadge__band" cx="100" cy="100" r="81"/>
             <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">SICUREZZA DELLE INFORMAZIONI · CERTIFICATO ·</textPath></text></g>
@@ -575,7 +565,6 @@
     <div class="footer__bottom">
       <span>© 2026 HYPNOS Srl · Tutti i diritti riservati</span>
       <span>Partita IVA 10682130967 · REA MI-2550012</span>
-      <a class="footer__iso" href="#certificazioni">Certificata ISO 9001 · ISO 14001 · ISO/IEC 27001</a>
       <a href="https://www.hypnosweb.it/privacy" target="_blank" rel="noopener">Privacy</a>
     </div>
   </div>
