@@ -3,12 +3,12 @@
 // The section is pinned; scroll progress (0…5) drives a deterministic render, so scrubbing back and forth is exact.
 
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
-const range = (p, a, b) => clamp((p - a) / (b - a));
+const rangeOf = (p, a, b) => clamp((p - a) / (b - a));
 const ease = t => t * t * (3 - 2 * t);
 const easeOut = t => 1 - Math.pow(1 - t, 3);
 const back = t => { const c = 1.7; return 1 + (c + 1) * Math.pow(t - 1, 3) + c * Math.pow(t - 1, 2); };
 
-export function initPipeline({ gsap, ScrollTrigger }) {
+export function initPipeline({ gsap, ScrollTrigger, reduced }) {
   const root = document.getElementById('verbali');
   if (!root) return;
   const $ = s => root.querySelector(s), $$ = s => [...root.querySelectorAll(s)];
@@ -40,10 +40,8 @@ export function initPipeline({ gsap, ScrollTrigger }) {
   }
   const qrRects = [...qr.children];
   // 4 · software (illustrative interface)
-  const rowsEl = $('#pv-rows');
-  const ROWS = [['GM 471 KX', 'Controllo velocità'], ['FT 208 LP', 'Tutor'], ['EK 553 RS', 'ZTL'], ['DB 914 MC', 'Controllo velocità'], ['HA 360 VT', 'Tutor']];
-  rowsEl.insertAdjacentHTML('beforeend', ROWS.map(([pl, ap]) => `<div class="pv-row"><span>${pl}</span><span>${ap}</span><em>Gestito</em></div>`).join(''));
-  const rows = [...rowsEl.querySelectorAll('.pv-row:not(.pv-row--head)')];
+  // the rows are in the page (fake plates), so the table is never empty before the animation runs
+  const rows = $$('#pv-rows .pv-row:not(.pv-row--head)');
   const bars = $('#pv-bars');
   const MONTHS = ['Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott'], VALS = [.52, .64, .58, .42, .78, .9];
   bars.innerHTML = MONTHS.map(m => `<i data-m="${m}"></i>`).join('');
@@ -51,11 +49,15 @@ export function initPipeline({ gsap, ScrollTrigger }) {
   // 5 · support
   const support = $$('.pv-support li');
 
+  // reduced motion: no pin and no scrubbing; each scene is shown in its final state and the steps switch scene
+  let still = -1;
   let lastP = -1;
   function render(p) {
     if (Math.abs(p - lastP) < 1e-4) return; lastP = p;
-    const active = Math.min(4, Math.floor(p + .02));
+    const active = still >= 0 ? still : Math.min(4, Math.floor(p + .02));
+    const range = still >= 0 ? () => 1 : rangeOf;
     scenes.forEach((sc, i) => {
+      if (still >= 0) { sc.style.opacity = i === still ? 1 : 0; sc.style.visibility = i === still ? 'visible' : 'hidden'; sc.style.transform = 'none'; return; }
       const inn = i === 0 ? 1 : ease(range(p, i - .14, i + .06));
       const out = i === 4 ? 0 : ease(range(p, i + .86, i + 1.02));
       const v = inn * (1 - out);
@@ -93,7 +95,7 @@ export function initPipeline({ gsap, ScrollTrigger }) {
     const ln = back(range(p, 1.34, 1.52));
     lens.style.opacity = clamp(ln * 1.4); lens.style.transform = `translateY(${(1 - ln) * 14}px) scale(${.9 + .1 * ln})`;
     lens.style.setProperty('--scan', `${-100 + 200 * range(p, 1.42, 1.72)}%`);
-    const PLATE = 'GM 471 KX', nc = Math.round(PLATE.length * range(p, 1.46, 1.72));
+    const PLATE = 'AB 123 CD', nc = Math.round(PLATE.length * range(p, 1.46, 1.72));
     const read = PLATE.slice(0, nc) + (nc < PLATE.length ? (nc > 0 ? '▍' : '') : '');
     if (ocr.textContent !== read) ocr.textContent = read;
     ocr.style.color = nc === PLATE.length ? 'var(--ok)' : '#fff';
@@ -123,8 +125,18 @@ export function initPipeline({ gsap, ScrollTrigger }) {
     support.forEach((li, i) => {
       const t = range(p, 4.02 + i * .08, 4.14 + i * .08);
       li.style.opacity = .35 + .65 * t; li.style.transform = `translateX(${(1 - easeOut(t)) * 18}px)`;
-      li.classList.toggle('ok', p > 4.1 + i * .08);
+      li.classList.toggle('ok', still >= 0 || p > 4.1 + i * .08);
     });
+  }
+
+  if (reduced) {
+    still = 0; render(0);
+    steps.forEach((li, i) => {
+      const go = () => { still = i; lastP = -1; render(i); };
+      li.addEventListener('click', go);
+      li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+    });
+    return;
   }
 
   const proxy = { p: 0 };

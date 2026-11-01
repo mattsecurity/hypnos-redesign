@@ -39,7 +39,8 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   // pin first (synchronously), so every ScrollTrigger below this section is measured with the pin spacer
   let P = 0, PT = 0;                 // P = smoothed progress the scene renders, PT = scroll target
   // pinned on every screen: the five phases follow the scroll, on phones and tablets too
-  ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=420%', scrub: true, onUpdate: s => { PT = s.progress * 1.02; } });
+  // (reduced motion: no pin, the street is a still frame and the steps switch phase)
+  const pin = reduced ? null : ScrollTrigger.create({ trigger: '.parking__pin', pin: true, start: 'top top', end: '+=420%', scrub: true, onUpdate: s => { PT = s.progress * 1.02; } });
 
   const CAR_MODELS = 18;
   const [street, van, meterTop, ...carLoad] = await Promise.all([
@@ -333,7 +334,7 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
     ui.capT.textContent = PHASES[i];
     ui.capD.textContent = steps[i].querySelector('span').textContent;
     ui.cap.classList.remove('swap'); void ui.cap.offsetWidth; ui.cap.classList.add('swap');
-    if (i > 0) toast(`<i></i><b>${PHASES[i]}</b><span>${TOASTS[i]}</span>`);
+    if (i > 0 && !reduced) toast(`<i></i><b>${PHASES[i]}</b><span>${TOASTS[i]}</span>`);
   }
 
   function render(dt) {
@@ -402,8 +403,20 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   }
   const start = () => { if (running) return; running = true; last = performance.now(); requestAnimationFrame(frame); };
   const stop = () => { running = false; };
+  if (reduced) P = PT = 1.02;
   resize(); hud(); setPhase(0); render(0);
   addEventListener('resize', () => { resize(); render(0); });
-  ScrollTrigger.create({ trigger: root, start: 'top bottom', end: 'bottom top', onToggle: s => (s.isActive ? start() : stop()) });
-  if (reduced) P = PT = 1.02;
+  if (!reduced) ScrollTrigger.create({ trigger: root, start: 'top bottom', end: 'bottom top', onToggle: s => (s.isActive ? start() : stop()) });
+
+  // steps are shortcuts (mouse, touch, keyboard): scroll to that phase, or show its still frame
+  const AT = [.1, .4, .6, .78, 1.02];
+  steps.forEach((li, i) => {
+    const go = () => {
+      if (reduced) { P = PT = AT[i]; render(0); hud(); return; }
+      const y = pin.start + (pin.end - pin.start) * AT[i] / 1.02;
+      window.__lenis ? window.__lenis.scrollTo(y, { duration: 1.2 }) : window.scrollTo({ top: y, behavior: 'smooth' });
+    };
+    li.addEventListener('click', go);
+    li.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); go(); } });
+  });
 }

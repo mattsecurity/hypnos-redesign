@@ -50,6 +50,20 @@ Prompt in `assets-src/prompts/`, script `assets-src/gen.sh`. Sosta: `pk-street` 
 - Poly Haven (CC0): HDRI `rooftop_night`, texture `asphalt_04` e `concrete_pavement_02` (lastre dei marciapiedi).
 - Guidatore: avatar Ready Player Me dagli esempi di three.js (`examples/models/gltf/readyplayer.me.glb`), alleggerito con glTF-Transform (rimossi cappello, baffi, denti e morph target) → `assets/3d/driver.glb`.
 - Three.js (MIT), GSAP + ScrollTrigger, Lenis.
-- Font: Inter, Inter Tight, JetBrains Mono (Google Fonts).
+- Font: Inter, Inter Tight, JetBrains Mono (OFL), ospitati sul sito in `assets/fonts/` + `css/fonts.css`: nessuna richiesta a Google.
 
 Il modulo contatti non invia dati a server: apre il programma di posta con il riepilogo.
+
+## Pagine, SEO e privacy
+
+- `privacy/` informativa privacy, `crediti/` fonti e licenze delle immagini, `404.html`. Generate con lo stesso header/footer della home, stile in `css/page.css`.
+- Registro interno di fonti e permessi delle immagini: `CREDITI-IMMAGINI.md`.
+- `robots.txt`, `sitemap.xml`, `llms.txt`, canonical, Open Graph e dati strutturati (`Organization`) puntano a **https://www.hypnosweb.it/**: se il dominio finale cambia, aggiornare questi file e i meta in `index.html`.
+- Anteprima social: `assets/og/hypnos-og.jpg` (1200×630, con indirizzo); icone `assets/og/logo-512.png`, `logo-180.png`.
+- Nessun cookie e nessuno strumento di statistica: niente banner. Se si aggiunge Google Analytics servono banner e informativa aggiornata.
+- Targhe: solo targhe chiaramente finte (`AB 123 CD` e simili), anche nella foto `speed-shot.webp`.
+
+## Accessibilità
+
+- Con "Riduci movimento" attivo (`prefers-reduced-motion`) `main.js` aggiunge `.reduced`: niente 3D né sezioni fissate allo scroll, la sequenza diventa una pagina ferma con i 5 capitoli, sosta e verbali mostrano un fotogramma fermo e i passaggi si cambiano con clic o tastiera.
+- Link "Vai al contenuto", passaggi di sosta e verbali raggiungibili con Tab (Invio/Spazio), il menu porta il focus sulla sezione.

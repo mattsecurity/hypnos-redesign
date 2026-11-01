@@ -31,7 +31,7 @@ const ROAD = {
 const LAMPS_X = [-61.2, -42, -20.8, -2.6, 15.4, 38.1, 58.3, 74.4];
 const LAMP_Z = [-13.1, 9.6];
 const POLE = new THREE.Vector3(28, 0, (ROAD.medianZ0 + ROAD.medianZ1) / 2);
-const PLATE = 'GM 471 KX';
+const PLATE = 'AB 123 CD';
 
 const clamp = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
 const lerp = (a, b, t) => a + (b - a) * t;

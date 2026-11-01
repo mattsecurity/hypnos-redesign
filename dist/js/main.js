@@ -1,7 +1,7 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
-import { createStory } from './story.js';
-import { initParking } from './parking.js';
-import { initPipeline } from './pipeline.js';
+import { createStory } from './story.js?v=20261101b';
+import { initParking } from './parking.js?v=20261101b';
+import { initPipeline } from './pipeline.js?v=20261101b';
 
 const { gsap, ScrollTrigger } = window;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -15,6 +15,8 @@ const range = (p, a, b) => clamp((p - a) / (b - a));
 const ease = t => t * t * (3 - 2 * t);
 const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
 const isMobile = () => innerWidth <= 720;
+// "Riduci movimento": no 3D flight, no pinned or scrubbed sections, no reveals; the content is laid out still
+if (reduced) document.documentElement.classList.add('reduced');
 
 /* ================================================================ */
 /*  Smooth scroll                                                    */
@@ -39,6 +41,8 @@ const scrollTo = target => {
     if (lenis) lenis.scrollTo(y, { immediate: true, force: true }); else window.scrollTo(0, y);
     ScrollTrigger.update();
     if (story) { const { p } = storyProgress(); story.jump(p); }
+    // keyboard: the next Tab continues from the section just reached, not from the menu
+    if (el !== document.body) { if (!el.hasAttribute('tabindex')) el.setAttribute('tabindex', '-1'); el.focus({ preventScroll: true }); }
   };
   if (reduced) { land(); return; }
   gsap.timeline()
@@ -89,6 +93,12 @@ gsap.set(['.brand__mark .mk', '.brand__word .rg'], { opacity: 0 });
 async function opening() {
   document.body.classList.remove('is-loading');
   lenis && lenis.start();
+  if (reduced) {
+    gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__mark .mk', '.brand__word .rg'], { opacity: 1 });
+    gsap.set('#hy-reveal-r', { attr: { width: 400 } });
+    loader.remove();
+    return;
+  }
   const tl = gsap.timeline();
   tl.to(loader, { opacity: 0, duration: .9, ease: 'power2.inOut' }, 0)
     .fromTo(sticky, { '--open': 1.07 }, { '--open': 1, duration: 1.6, ease: 'expo.out' }, 0)
@@ -143,7 +153,7 @@ function storyProgress() {
 const fallbackImg = $('.story__fallback');
 function fitFallback() {
   const W = sticky.offsetWidth, H = sticky.offsetHeight;
-  if (!W || !H) return;
+  if (!W || !H || reduced) return;
   const MPP = .135, GW = 1536 * MPP, GH = 1024 * MPP, FOCUS = { x: -8, z: -.7 };  // mirror story.js
   const aspect = W / H, portrait = aspect < .9;
   const visH = portrait ? GW * .82 : GH * .92, visW = portrait ? GH * .92 : GW * .92;
@@ -155,6 +165,7 @@ function fitFallback() {
 }
 
 function updateChapters(p) {
+  if (reduced) return;   // chapters are laid out as a still page (css: .reduced .story)
   for (const c of chapters) {
     const a = parseFloat(c.dataset.in), b = parseFloat(c.dataset.out);
     const w = .022;
@@ -295,6 +306,7 @@ function onStoryFrame(h) {
 async function initStory() {
   const canvas = $('#story-canvas');
   try {
+    if (reduced) throw new Error('movimento ridotto');
     if (!window.WebGL2RenderingContext) throw new Error('WebGL2 non disponibile');
     story = await createStory({ canvas, quality: new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
     story.onFrame(onStoryFrame);
@@ -333,29 +345,33 @@ function splitLines(el) {
 }
 
 function sectionMotion() {
+  // reduced motion: none of the reveals below, so gsap.from() is a no-op and the content stays where it is
+  const from = reduced ? () => {} : (t, v) => gsap.from(t, v);
   // headings: lines rise
   $$('h2.split').forEach(h => {
     const lines = splitLines(h);
-    gsap.from(lines, { yPercent: 110, duration: 1.2, stagger: .09, ease: 'power4.out', scrollTrigger: { trigger: h, start: 'top 86%' } });
+    from(lines, { yPercent: 110, duration: 1.2, stagger: .09, ease: 'power4.out', scrollTrigger: { trigger: h, start: 'top 86%' } });
   });
   // eyebrows / paragraphs fade
   $$('section:not(.story) .eyebrow, .solutions__intro, .parking__intro > p, .pipeline__head p, .software__copy > p, .company__main > p, .contact__copy > p, .manifesto__pills, .kpis, .audience, .tributi, .contact__list, .form')
-    .forEach(el => gsap.from(el, { y: 26, opacity: 0, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
+    .forEach(el => from(el, { y: 26, opacity: 0, duration: 1.1, ease: 'power3.out', scrollTrigger: { trigger: el, start: 'top 90%' } }));
 
   // manifesto: words light up with scroll
   const m = $('#manifesto');
+  if (!reduced) {
   m.innerHTML = m.textContent.trim().split(/\s+/).map(w => `<span class="w">${w}</span>`).join(' ');
   const words = $$('.w', m);
   ScrollTrigger.create({
     trigger: m, start: 'top 80%', end: 'bottom 45%', scrub: true,
     onUpdate: s => { const n = Math.round(s.progress * words.length); words.forEach((w, i) => w.classList.toggle('on', i < n)); },
   });
+  }
 
-  // solutions: horizontal pinned gallery (desktop) / swipe (mobile)
+  // solutions: horizontal pinned gallery (desktop) / swipe (mobile and reduced motion)
   const track = $('#htrack');
   const cards = $$('.card', track);
   const mm = gsap.matchMedia();
-  mm.add('(min-width: 721px)', () => {
+  mm.add(reduced ? 'not all' : '(min-width: 721px)', () => {
     const dist = () => track.scrollWidth - innerWidth;
     const tween = gsap.to(track, { x: () => -dist(), ease: 'none' });
     const st = ScrollTrigger.create({
@@ -367,9 +383,17 @@ function sectionMotion() {
       }),
     });
     gsap.from(cards, { y: 80, opacity: 0, duration: 1.2, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: track, start: 'top 85%' } });
-    return () => { st.kill(); tween.kill(); gsap.set(track, { x: 0 }); };
+    // keyboard: a focused link inside the moving track is brought into view by scrolling the page to it
+    const onFocus = e => {
+      const card = e.target.closest('.card'); if (!card) return;
+      $('#hscroll').scrollLeft = 0;   // the browser may have scrolled the clipped container itself
+      const y = st.start + (st.end - st.start) * clamp((card.offsetLeft + card.offsetWidth - innerWidth + 40) / dist());
+      lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y);
+    };
+    track.addEventListener('focusin', onFocus);
+    return () => { st.kill(); tween.kill(); gsap.set(track, { x: 0 }); track.removeEventListener('focusin', onFocus); };
   });
-  mm.add('(max-width: 720px)', () => {
+  mm.add(reduced ? 'all' : '(max-width: 720px)', () => {
     const hs = $('#hscroll');
     hs.style.overflowX = 'auto'; hs.style.scrollSnapType = 'x mandatory';
     cards.forEach(c => { c.style.scrollSnapAlign = 'start'; });
@@ -390,20 +414,21 @@ function sectionMotion() {
   // parking: living street simulation, pinned through the five phases
   initParking({ gsap, ScrollTrigger, isMobile, reduced });
   // pipeline: one event followed from detection to reporting
-  initPipeline({ gsap, ScrollTrigger });
+  initPipeline({ gsap, ScrollTrigger, reduced });
 
   // software dashboard
-  gsap.from('#dash', { y: 90, rotateX: 10, opacity: 0, transformPerspective: 1400, duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: '#dash', start: 'top 85%' } });
+  from('#dash', { y: 90, rotateX: 10, opacity: 0, transformPerspective: 1400, duration: 1.4, ease: 'power3.out', scrollTrigger: { trigger: '#dash', start: 'top 85%' } });
   liveDashboard();
 
   // method progress
-  gsap.fromTo('#method-fill', { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '#method', start: 'top 75%', end: 'bottom 60%', scrub: .6 } });
-  gsap.from('.method__step', { y: 40, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '#method', start: 'top 80%' } });
+  if (reduced) gsap.set('#method-fill', { scaleX: 1 });
+  else gsap.fromTo('#method-fill', { scaleX: 0 }, { scaleX: 1, ease: 'none', scrollTrigger: { trigger: '#method', start: 'top 75%', end: 'bottom 60%', scrub: .6 } });
+  from('.method__step', { y: 40, opacity: 0, duration: 1, stagger: .1, ease: 'power3.out', scrollTrigger: { trigger: '#method', start: 'top 80%' } });
 
   // certifications: cards rise, badges roll in
-  gsap.from('.certsec__intro, .certsec__foot li', { y: 26, opacity: 0, duration: 1.1, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: '.certsec', start: 'top 75%' } });
-  gsap.from('.cert', { y: 70, opacity: 0, duration: 1.2, stagger: .12, ease: 'power3.out', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
-  gsap.from('.cbadge', { rotate: -90, scale: .6, opacity: 0, duration: 1.4, stagger: .12, ease: 'back.out(1.4)', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
+  from('.certsec__intro, .certsec__foot li', { y: 26, opacity: 0, duration: 1.1, stagger: .08, ease: 'power3.out', scrollTrigger: { trigger: '.certsec', start: 'top 75%' } });
+  from('.cert', { y: 70, opacity: 0, duration: 1.2, stagger: .12, ease: 'power3.out', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
+  from('.cbadge', { rotate: -90, scale: .6, opacity: 0, duration: 1.4, stagger: .12, ease: 'back.out(1.4)', scrollTrigger: { trigger: '.certsec__grid', start: 'top 85%' } });
   certCards();
 }
 
@@ -437,9 +462,10 @@ function liveDashboard() {
   const list = $('#dash-list');
   const countEl = $('#dash-count');
   const spark = $('#spark');
-  const L = 'ABCDEFGHJKLMNPRSTVWXYZ';
   const rnd = a => a[Math.floor(Math.random() * a.length)];
-  const plate = () => `${rnd(L)}${rnd(L)} ${100 + Math.floor(Math.random() * 899)} ${rnd(L)}${rnd(L)}`;
+  // obviously fake plates only (alphabetical runs, repeated digits): never one that could belong to a real car
+  const PLATES = ['AB 123 CD', 'CD 456 EF', 'EF 789 GH', 'XY 000 ZZ', 'AA 111 AA', 'BB 222 BB', 'CC 333 CC', 'DD 444 DD', 'ZZ 999 ZZ', 'AB 000 AB'];
+  const plate = () => rnd(PLATES);
   const gates = ['CAM 04', 'ZTL 02', 'VEL 01', 'ZTL 05', 'CAM 07'];
   let count = 12480;
   let t = 0;
@@ -458,6 +484,7 @@ function liveDashboard() {
     pts.push(12 + Math.random() * 16); pts.shift(); drawSpark();
   };
   for (let i = 0; i < 9; i++) add();
+  if (reduced) return;   // still list, no rows streaming in
   let iv = null;
   ScrollTrigger.create({ trigger: '#dash', start: 'top bottom', end: 'bottom top', onToggle: s => { clearInterval(iv); if (s.isActive) iv = setInterval(() => !document.hidden && add(), 1400); } });
 }
@@ -478,13 +505,14 @@ function contactForm() {
     }
     const priv = $('#f-privacy');
     priv.parentElement.classList.toggle('invalid', !priv.checked); ok = ok && priv.checked;
-    if (!ok) { $('#form-note').textContent = 'Compila i campi evidenziati e accetta l’informativa.'; return; }
+    if (!ok) { $('#form-note').textContent = 'Compila i campi evidenziati e conferma di aver letto l’informativa privacy.'; return; }
     const d = new FormData(form);
     const topics = d.getAll('topic');
-    const body = [
-      `Nome: ${d.get('name')}`, d.get('ente') ? `Ente: ${d.get('ente')}` : '', `E-mail: ${d.get('email')}`, d.get('phone') ? `Telefono: ${d.get('phone')}` : '',
-      topics.length ? `Interesse: ${topics.join(', ')}` : '', '', d.get('message'),
-    ].filter((l, i, a) => l !== '' || a[i - 1] !== '').join('\n');
+    const head = [
+      `Nome: ${d.get('name')}`, d.get('ente') && `Ente: ${d.get('ente')}`, `E-mail: ${d.get('email')}`, d.get('phone') && `Telefono: ${d.get('phone')}`,
+      topics.length && `Interesse: ${topics.join(', ')}`,
+    ].filter(Boolean);
+    const body = `${head.join('\n')}\n\n${d.get('message')}`;
     const subject = `Richiesta informazioni${topics.length ? ' — ' + topics.join(', ') : ''}`;
     $('#mail-summary').textContent = `Oggetto: ${subject}\n\n${body}`;
     $('#mail-link').href = `mailto:info@hypnosweb.it?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
