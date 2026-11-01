@@ -43,7 +43,10 @@ const V = (x, y, z) => new THREE.Vector3(x, y, z);
 // smooth band-limited noise (sum of incommensurate sines) — drone hover, gimbal drift, pole sway
 const wob = (t, s = 0) => Math.sin(t + s * 1.7) * .5 + Math.sin(t * 2.31 + s * 3.1) * .3 + Math.sin(t * 4.77 + s * 5.3) * .2;
 
-export async function createStory({ canvas, onProgress, quality = 'high' }) {
+// gate: the downloads start at once, but building the scene (a long main-thread job, seconds on a phone)
+// waits for it and then runs in slices, so the page intro never stalls
+export async function createStory({ canvas, onProgress, quality = 'high', gate = null }) {
+  const breathe = () => new Promise(r => setTimeout(r));
   const isLow = quality === 'low';
   const renderer = new THREE.WebGLRenderer({ canvas, antialias: false, powerPreference: 'high-performance', stencil: false });
   renderer.setPixelRatio(Math.min(devicePixelRatio, isLow ? 1.25 : 1.75));
@@ -81,6 +84,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     loadTex('assets/tex/pavement_diff.jpg'),
     loadTex('assets/tex/pavement_nor.jpg', false),
   ]);
+  if (gate) await gate;
   draco.dispose();
   env.mapping = THREE.EquirectangularReflectionMapping;
   scene.environment = env;
@@ -311,6 +315,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     const g = new THREE.Mesh(glowGeo, lampGlow); g.position.set(xx, 7.18, z + side * .25); scene.add(g);
   }
 
+  await breathe();
   /* ---------- 3D city: sidewalks, planted median, trees, buildings ---------- */
   const SKY = { top: 0x2c3f63, ground: 0x2a221b };
   const city = buildCity({ scene, groundMat, ROAD, GW, lamps: lampHeads, isLow, sky: SKY, medianTex });
@@ -336,6 +341,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     lampPool.forEach((l, i) => l.position.copy(sorted[i][1]).add(V(0, -.25, 0)));
   }
 
+  await breathe();
   /* ---------- cars (generic saloon, de-badged) ---------- */
   const plateTex = makePlateTexture(renderer);
   // interior/detail atlas with our Italian plate composited into the plate slot
@@ -474,6 +480,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
     ];
   for (const d of trafficDefs) { const c = buildCar(d.color, false); c.def = d; if (d.dir < 0) c.group.rotation.y = Math.PI; traffic.push(c); }
 
+  await breathe();
   /* ---------- ANPR pole + camera ---------- */
   const rig = new THREE.Group(); rig.position.copy(POLE); scene.add(rig);
   const POLE_H = 6.6, ARM_L = 2.3, ARM_Y = POLE_H - .25;
@@ -590,6 +597,7 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   const plateLens = housing.localToWorld(V(.036, CAM.CY - .004, CAM.Z1 + .006)).clone();
   const plateAxis = housing.localToWorld(V(.036, CAM.CY - .004, CAM.Z1 + 1)).sub(plateLens).normalize();
 
+  await breathe();
   /* ---------- post-processing ---------- */
   const composer = new EffectComposer(renderer, new THREE.WebGLRenderTarget(1, 1, { type: THREE.HalfFloatType, samples: isLow ? 0 : 4 }));
   composer.addPass(new RenderPass(scene, camera));
@@ -918,6 +926,52 @@ export async function createStory({ canvas, onProgress, quality = 'high' }) {
   }
 
   let onFrame = null;
+  // warm-up: the first frame would otherwise upload every texture and link ~75 shader programs in one go
+  // (~0.3 s on a laptop, seconds on a phone). Do it a few at a time instead, including the objects hidden at
+  // the start and the post-processing passes.
+  // the scene and passes draw into the composer's half-float targets: compile for those, not for the screen,
+  // or the programs (tone mapping, colour space) would not match the ones the first frame asks for
+  const screenTarget = renderer.getRenderTarget();
+  renderer.setRenderTarget(composer.readBuffer);
+  try {
+    const drawables = []; scene.traverse(o => o.material && drawables.push(o));
+    const quad = new THREE.PlaneGeometry(2, 2);
+    const postMats = new Set(composer.passes.flatMap(p => Object.values(p).flat()).filter(m => m && m.isMaterial));
+    for (const m of postMats) drawables.push(new THREE.Mesh(quad, m));
+    const textures = new Set();
+    for (const o of drawables) for (const m of [o.material].flat()) {
+      for (const v of [...Object.values(m), ...Object.values(m.uniforms || {}).map(u => u && u.value)].flat()) if (v && v.isTexture && v.image) textures.add(v);
+    }
+    // turn the photos into ImageBitmaps off the main thread (flip and no colour conversion baked in, as three.js
+    // would ask for them): uploading an <img> makes the browser decode and convert it on the main thread
+    const bySource = new Map();
+    for (const t of textures) if (t.image instanceof HTMLImageElement) bySource.set(t.source, [...(bySource.get(t.source) || []), t]);
+    await Promise.all([...bySource.values()].map(async ts => {
+      const flipY = ts[0].flipY;
+      if (ts.some(t => t.flipY !== flipY || t.premultiplyAlpha)) return;
+      try {
+        // from the file (already in the HTTP cache), not from the <img>: only a blob is decoded on a worker thread
+        const blob = await (await fetch(ts[0].image.src)).blob();
+        const bmp = await createImageBitmap(blob, { imageOrientation: flipY ? 'flipY' : 'from-image', premultiplyAlpha: 'none', colorSpaceConversion: 'none' });
+        for (const t of ts) { t.image = bmp; t.flipY = false; t.needsUpdate = true; }
+      } catch { /* keep the <img> */ }
+    }));
+    let cost = 0;
+    for (const t of textures) {
+      renderer.initTexture(t);
+      cost += (t.image.width || 0) * (t.image.height || 0);
+      if (cost > 1.5e6) { cost = 0; await breathe(); }
+    }
+    let n = renderer.info.programs.length;
+    for (const o of drawables) {
+      const vis = o.visible; o.visible = true;
+      renderer.compile(o, camera, scene);
+      o.visible = vis;
+      if (renderer.info.programs.length - n >= 6) { n = renderer.info.programs.length; await renderer.compileAsync(o, camera, scene); await breathe(); }
+    }
+    await renderer.compileAsync(scene, camera);
+  } catch { /* the first render compiles whatever is left */ }
+  renderer.setRenderTarget(screenTarget);
   return {
     resize,
     setProgress(p) { progress = clamp(p); },

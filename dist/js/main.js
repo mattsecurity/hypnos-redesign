@@ -1,7 +1,7 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
-import { createStory } from './story.js?v=20261101c';
-import { initParking } from './parking.js?v=20261101c';
-import { initPipeline } from './pipeline.js?v=20261101c';
+import { createStory } from './story.js?v=20261101f';
+import { initParking } from './parking.js?v=20261101f';
+import { initPipeline } from './pipeline.js?v=20261101f';
 
 const { gsap, ScrollTrigger } = window;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -99,16 +99,25 @@ async function opening() {
     loader.remove();
     return;
   }
+  // veil, pull-back and hero copy run as Web Animations on the compositor: they stay smooth on phones even if
+  // the main thread stalls (fonts, layout, the 3D scene starting up)
+  const EXPO_OUT = 'cubic-bezier(.16,1,.3,1)', POWER3_OUT = 'cubic-bezier(.215,.61,.355,1)';
+  const anims = [
+    loader.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.45,0,.55,1)', fill: 'forwards' }),
+    ...[$('#story-canvas'), fallbackImg].map(el => el.animate([{ scale: 1.07 }, { scale: 1 }], { duration: 1600, easing: EXPO_OUT })),
+    ...$$('.chapter--hero > *').map((el, i) => {
+      el.style.opacity = '';
+      return el.animate([{ opacity: 0, translate: '0 28px' }, { opacity: 1, translate: '0 0' }], { duration: 900, delay: 250 + i * 70, easing: POWER3_OUT, fill: 'backwards' });
+    }),
+  ];
+  anims[0].finished.then(() => loader.remove());
+  gsap.set('.chapter--hero', { opacity: 1 });
   const tl = gsap.timeline();
-  tl.to(loader, { opacity: 0, duration: .9, ease: 'power2.inOut' }, 0)
-    .fromTo(sticky, { '--open': 1.07 }, { '--open': 1, duration: 1.6, ease: 'expo.out' }, 0)
-    .fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .8, ease: 'power3.inOut' }, .1)
+  tl.fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .8, ease: 'power3.inOut' }, .1)
     .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .35)
-    .set('.chapter--hero', { opacity: 1 }, 0)
-    .fromTo('.chapter--hero > *', { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .9, stagger: .07, ease: 'power3.out' }, .25)
-    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45)
-    .add(() => loader.remove(), .95);
-  await tl;
+    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45);
+  // the hero copy has landed (the pull-back's long tail keeps going on its own)
+  await Promise.all([tl, ...anims.slice(3).map(a => a.finished)]);
 }
 
 /* ================================================================ */
@@ -306,7 +315,7 @@ async function initStory() {
   try {
     if (reduced) throw new Error('movimento ridotto');
     if (!window.WebGL2RenderingContext) throw new Error('WebGL2 non disponibile');
-    story = await createStory({ canvas, quality: new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
+    story = await createStory({ canvas, gate: introPlayed, quality:new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
     story.onFrame(onStoryFrame);
     window.__story = story;
     drawPlateCrop(story.plateCanvas);
@@ -524,13 +533,16 @@ function contactForm() {
 /*  Boot                                                             */
 /* ================================================================ */
 const wait = ms => new Promise(r => setTimeout(r, ms));
+// the 3D scene downloads during the intro but is only built once the intro has played (see createStory's gate)
+let introDone;
+const introPlayed = new Promise(r => { introDone = r; });
 (async function boot() {
   fitFallback();
   addEventListener('resize', fitFallback);
-  const storyReady = initStory();
-  // open as soon as the hero photo is decoded (a cached 3D scene gets a short grace period to open directly)
+  initStory();
+  // open as soon as the hero photo is decoded; the photo is framed like the scene's first shot, so the 3D cross-fades in later
   await Promise.race([fallbackImg.decode().catch(() => {}), wait(1200)]);
-  await Promise.race([Promise.all([storyReady, document.fonts ? document.fonts.ready : null]), wait(350)]);
+  await Promise.race([document.fonts ? document.fonts.ready : null, wait(350)]);
   tick();
   sectionMotion();
   contactForm();
@@ -538,6 +550,7 @@ const wait = ms => new Promise(r => setTimeout(r, ms));
   await opening();
   heroIntroDone = true;
   ScrollTrigger.refresh();
+  introDone();
   window.__go = p => { const y = storyEl.offsetTop + p * storySpan(); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); };
   // debug hook: ?p=0.5 jumps into the sequence
   const q = new URLSearchParams(location.search).get('p');

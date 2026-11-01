@@ -79,9 +79,8 @@ p { margin: 0; }
 .story { position: relative; height: 1050vh; background: var(--night); color: #fff; }
 /* the stage fills the large viewport, so the 3D scene also runs behind mobile browser toolbars (no white band
    when they slide away); captions and HUD stay inside the small viewport, always above the toolbar */
-.story__sticky { --open: 1; position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; background: var(--night); transform-origin: 50% 40%; will-change: transform; }
+.story__sticky { position: sticky; top: 0; height: 100vh; height: 100lvh; overflow: hidden; background: var(--night); transform-origin: 50% 40%; will-change: transform; }
 /* opening pull-back on the scene only (the captions stay put) */
-.story__canvas, .story__fallback { scale: var(--open); }
 .story__canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; opacity: 0; transition: opacity .9s var(--ease); }
 /* the aerial photo carries the hero until the 3D scene has rendered its first frame (laid out by main.js) */
 .story__fallback { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform-origin: 50% 50%; transition: opacity .6s .5s; }
