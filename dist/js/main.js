@@ -1,7 +1,7 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
-import { createStory } from './story.js?v=20261101b';
-import { initParking } from './parking.js?v=20261101b';
-import { initPipeline } from './pipeline.js?v=20261101b';
+import { createStory } from './story.js?v=20261101c';
+import { initParking } from './parking.js?v=20261101c';
+import { initPipeline } from './pipeline.js?v=20261101c';
 
 const { gsap, ScrollTrigger } = window;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -82,19 +82,19 @@ function updateNav() {
 }
 
 /* ================================================================ */
-/*  Intro: logo draws itself, then flies into the nav                */
+/*  Intro: the wordmark writes itself in the nav                     */
 /* ================================================================ */
 const loader = $('#loader');
 // No loading screen: the hero photo is on the page from the first paint (the 3D scene fades in over it later).
-// The night veil lifts with a slight pull-back, the logo assembles in the nav and the hero copy rises: under a second.
+// The night veil lifts with a slight pull-back, the wordmark writes itself in the nav and the hero copy rises: under a second.
 gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint', '.chapter--hero > *'], { opacity: 0 });
-gsap.set(['.brand__mark .mk', '.brand__word .rg'], { opacity: 0 });
+gsap.set('.brand__word .rg', { opacity: 0 });
 
 async function opening() {
   document.body.classList.remove('is-loading');
   lenis && lenis.start();
   if (reduced) {
-    gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__mark .mk', '.brand__word .rg'], { opacity: 1 });
+    gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__word .rg'], { opacity: 1 });
     gsap.set('#hy-reveal-r', { attr: { width: 400 } });
     loader.remove();
     return;
@@ -102,10 +102,8 @@ async function opening() {
   const tl = gsap.timeline();
   tl.to(loader, { opacity: 0, duration: .9, ease: 'power2.inOut' }, 0)
     .fromTo(sticky, { '--open': 1.07 }, { '--open': 1, duration: 1.6, ease: 'expo.out' }, 0)
-    .fromTo('.brand__mark .mk', { opacity: 0, x: i => [-150, 90, 170, -80, -170, 140][i], y: i => [150, -80, 120, -150, 50, -150][i] },
-      { opacity: 1, x: 0, y: 0, duration: .75, stagger: .045, ease: 'expo.out' }, .05)
-    .fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .7, ease: 'power3.inOut' }, .2)
-    .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .4)
+    .fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .8, ease: 'power3.inOut' }, .1)
+    .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .35)
     .set('.chapter--hero', { opacity: 1 }, 0)
     .fromTo('.chapter--hero > *', { y: 28, opacity: 0 }, { y: 0, opacity: 1, duration: .9, stagger: .07, ease: 'power3.out' }, .25)
     .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45)

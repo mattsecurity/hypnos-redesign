@@ -35,7 +35,7 @@ Nessuna ritrae prodotti venduti da HYPNOS, luoghi riconoscibili o persone reali.
 | File | Come | Permesso |
 |---|---|---|
 | `assets/og/hypnos-og.jpg` | Composta in HTML (foto `aerial`, logo, testi) e salvata con Chrome | Nostra |
-| `assets/og/logo-512.png`, `logo-180.png`, `assets/favicon.svg` | Dal logo vettoriale HYPNOS | Marchio del cliente |
+| `assets/og/logo-512.png`, `logo-180.png`, `assets/favicon.svg` | Dalla scritta vettoriale HYPNOS (512: scritta intera; 180 e favicon: la O arancione) | Marchio del cliente |
 | Telecamera ANPR, palo, città 3D, cartello | Geometria scritta in codice (`js/story.js`, `js/city.js`) | Nostra |
 
 ## Asset di terze parti
