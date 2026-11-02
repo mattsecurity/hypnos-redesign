@@ -16,8 +16,8 @@ Nessuna ritrae prodotti venduti da HYPNOS, luoghi riconoscibili o persone reali.
 | `aerial.webp` | `aerial.txt` | Sequenza 3D, cruscotto software | |
 | `aerial-lod1.webp` | `lod1.txt` (dal ritaglio di `aerial`) | Sequenza 3D da vicino | |
 | `anpr.webp`, `anpr-sm.webp` | `anpr.txt` | Soluzioni · Lettura targhe | |
-| `autovelox.webp`, `autovelox-sm.webp` | `autovelox.txt` | Soluzioni · Autovelox, Verbali | |
-| `tutor.webp`, `tutor-sm.webp` | `tutor.txt` | Soluzioni · Tutor, Verbali | Nome "Tutor" in attesa di conferma marchio da Hypnos |
+| `autovelox.webp`, `autovelox-sm.webp` | `autovelox.txt` | Soluzioni · Controllo della velocità puntuale, Verbali | |
+| `tutor.webp`, `tutor-sm.webp` | `tutor.txt` | Soluzioni · Controllo della velocità media, Verbali | Dicitura "Tutor" sostituita con "controllo della velocità media" (2/11/2026) |
 | `ztl.webp`, `ztl-sm.webp` | `ztl.txt` | Soluzioni · ZTL, Verbali | |
 | `parcometro.webp`, `parcometro-sm.webp` | `parcometro.txt` | Soluzioni · Parcometri | |
 | `control.webp`, `control-sm.webp` | `control.txt` | Soluzioni · Software | |
