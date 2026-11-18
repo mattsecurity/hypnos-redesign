@@ -17,6 +17,19 @@
 <link rel="stylesheet" href="/css/fonts.css?v=20261118a">
 <link rel="stylesheet" href="/css/main.css?v=20261118a">
 <link rel="stylesheet" href="/css/page.css?v=20261118a">
+<script>
+/* This page is served for any missing address, so its paths start from the site root ("/").
+   On a GitHub Pages project site the root is the repository folder (user.github.io/hypnos-redesign/):
+   there, styles, icon and links are moved under that folder. On the real domain nothing changes. */
+(function () {
+  var seg = location.pathname.split('/')[1];
+  var root = /\.github\.io$/.test(location.hostname) && seg ? '/' + seg + '/' : '/';
+  if (root === '/') return;
+  var fix = function (el, attr) { var v = el.getAttribute(attr); if (v && v[0] === '/' && v[1] !== '/') el.setAttribute(attr, root + v.slice(1)); };
+  document.querySelectorAll('link[href]').forEach(function (l) { fix(l, 'href'); });
+  document.addEventListener('DOMContentLoaded', function () { document.querySelectorAll('a[href]').forEach(function (a) { fix(a, 'href'); }); });
+})();
+</script>
 </head>
 <body class="page">
 <svg width="0" height="0" style="position:absolute" aria-hidden="true">
