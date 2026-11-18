@@ -106,7 +106,7 @@ function curlFingers(skel, side, amt) {
 
 /* ------------------------------------------------------------------ */
 export async function loadDriver(gltfLoader) {
-  const gltf = await gltfLoader.loadAsync('assets/3d/driver.glb');
+  const gltf = await gltfLoader.loadAsync(new URL('../assets/3d/driver.glb', import.meta.url).href);
   const root = gltf.scene;
   root.traverse(o => {
     if (!o.isMesh) return;

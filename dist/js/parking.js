@@ -20,7 +20,10 @@ const easeIO = t => (t < .5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 const bez = (a, b, c, d, t) => { const u = 1 - t; return u * u * u * a + 3 * u * u * t * b + 3 * u * t * t * c + t * t * t * d; };
 const bezD = (a, b, c, d, t) => { const u = 1 - t; return 3 * u * u * (b - a) + 6 * u * t * (c - b) + 3 * t * t * (d - c); };
 const loadImg = src => new Promise(res => { const i = new Image(); i.onload = () => res(i); i.onerror = () => res(null); i.src = src; });
-const euro = v => '€ ' + v.toLocaleString('it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+// site root, worked out from this file: the same scripts serve the Italian page (/) and the English one (/en/)
+const A = p => new URL('../' + p, import.meta.url).href;
+const EN = document.documentElement.lang.startsWith('en');
+const euro = v => (EN ? '€' : '€ ') + v.toLocaleString(EN ? 'en-GB' : 'it-IT', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
 export async function initParking({ gsap, ScrollTrigger, reduced }) {
   const root = document.getElementById('sosta');
@@ -44,8 +47,8 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
 
   const CAR_MODELS = 18;
   const [street, van, meterTop, ...carLoad] = await Promise.all([
-    loadImg('assets/img/parking-street.webp'), loadImg('assets/img/van-top.webp'), loadImg('assets/img/meter-top.webp'),
-    ...Array.from({ length: CAR_MODELS }, (_, i) => loadImg(`assets/img/cars/car-${i + 1}.webp`)),
+    loadImg(A('assets/img/parking-street.webp')), loadImg(A('assets/img/van-top.webp')), loadImg(A('assets/img/meter-top.webp')),
+    ...Array.from({ length: CAR_MODELS }, (_, i) => loadImg(A(`assets/img/cars/car-${i + 1}.webp`))),
   ]);
   // real-world lengths per model (m), so a city car stays shorter than an SUV
   const CAR_LEN = [4.0, 4.5, 4.3, 4.5, 4.1, 4.4, 3.5, 4.1, 4.2, 4.3, 4.3, 3.95, 3.85, 4.6, 4.4, 4.5, 4.55, 3.8];
@@ -187,7 +190,8 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
             c.state = 'parked'; c.t = 0; c.stay = 5 + Math.random() * 9; c.brake = 0; c.h = ANG; s.car = c; s.reserved = false;
             const mins = [30, 45, 60, 90, 120][(Math.random() * 5) | 0];
             revenue += mins / 60 * 1.5;
-            toast(`<i></i><b>Stallo ${String(s.i + 1).padStart(2, '0')}</b><span>Sosta pagata al parcometro · ${mins >= 60 ? (mins / 60).toString().replace('.', ',') + ' h' : mins + ' min'}</span>`);
+            const dur = mins >= 60 ? (EN ? String(mins / 60) : (mins / 60).toString().replace('.', ',')) + ' h' : mins + ' min';
+            toast(EN ? `<i></i><b>Bay ${String(s.i + 1).padStart(2, '0')}</b><span>Paid at the meter · ${dur}</span>` : `<i></i><b>Stallo ${String(s.i + 1).padStart(2, '0')}</b><span>Sosta pagata al parcometro · ${dur}</span>`);
             hud();
           }
           break;
@@ -321,8 +325,10 @@ export async function initParking({ gsap, ScrollTrigger, reduced }) {
   function roundRect(g, x, y, w, h, r) { g.beginPath(); g.moveTo(x + r, y); g.arcTo(x + w, y, x + w, y + h, r); g.arcTo(x + w, y + h, x, y + h, r); g.arcTo(x, y + h, x, y, r); g.arcTo(x, y, x + w, y, r); g.closePath(); }
 
   /* ---------- phases ---------- */
-  const PHASES = ['Fornitura', 'Installazione', 'Segnaletica', 'Manutenzione', 'Gestione'];
-  const TOASTS = ['Fornitura dei parcometri', 'Installazione del parcometro su strada', 'Segnaletica orizzontale e verticale', 'Manutenzione dei parcometri', 'Gestione con personale altamente qualificato'];
+  const PHASES = EN ? ['Supply', 'Installation', 'Road markings', 'Maintenance', 'Management'] : ['Fornitura', 'Installazione', 'Segnaletica', 'Manutenzione', 'Gestione'];
+  const TOASTS = EN
+    ? ['Supply of parking meters', 'Parking meter installed on the street', 'Road markings and signs', 'Parking meter maintenance', 'Management by highly qualified staff']
+    : ['Fornitura dei parcometri', 'Installazione del parcometro su strada', 'Segnaletica orizzontale e verticale', 'Manutenzione dei parcometri', 'Gestione con personale altamente qualificato'];
   let phaseIdx = -1;
   function setPhase(i) {
     if (i === phaseIdx) return; phaseIdx = i;

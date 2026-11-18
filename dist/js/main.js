@@ -1,7 +1,10 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
-import { createStory } from './story.js?v=20261101f';
-import { initParking } from './parking.js?v=20261101f';
-import { initPipeline } from './pipeline.js?v=20261101f';
+import { createStory } from './story.js?v=20261118a';
+import { initParking } from './parking.js?v=20261118a';
+import { initPipeline } from './pipeline.js?v=20261118a';
+
+// page language: the English page (/en/) runs the same scripts
+const EN = document.documentElement.lang.startsWith('en');
 
 const { gsap, ScrollTrigger } = window;
 if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
@@ -87,14 +90,14 @@ function updateNav() {
 const loader = $('#loader');
 // No loading screen: the hero photo is on the page from the first paint (the 3D scene fades in over it later).
 // The night veil lifts with a slight pull-back, the wordmark writes itself in the nav and the hero copy rises: under a second.
-gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint', '.chapter--hero > *'], { opacity: 0 });
+gsap.set(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint', '.chapter--hero > *'], { opacity: 0 });
 gsap.set('.brand__word .rg', { opacity: 0 });
 
 async function opening() {
   document.body.classList.remove('is-loading');
   lenis && lenis.start();
   if (reduced) {
-    gsap.set(['.nav__links', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__word .rg'], { opacity: 1 });
+    gsap.set(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__word .rg'], { opacity: 1 });
     gsap.set('#hy-reveal-r', { attr: { width: 400 } });
     loader.remove();
     return;
@@ -115,7 +118,7 @@ async function opening() {
   const tl = gsap.timeline();
   tl.fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .8, ease: 'power3.inOut' }, .1)
     .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .35)
-    .fromTo(['.nav__links', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45);
+    .fromTo(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45);
   // the hero copy has landed (the pull-back's long tail keeps going on its own)
   await Promise.all([tl, ...anims.slice(3).map(a => a.finished)]);
 }
@@ -483,11 +486,11 @@ function liveDashboard() {
     t += 1;
     const now = new Date();
     const li = document.createElement('li');
-    li.innerHTML = `<span>${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}</span><span>${plate()}</span><span>${rnd(gates)}</span><span class="st">Registrato</span>`;
+    li.innerHTML = `<span>${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}</span><span>${plate()}</span><span>${rnd(gates)}</span><span class="st">${EN ? 'Logged' : 'Registrato'}</span>`;
     list.prepend(li);
     while (list.children.length > 10) list.lastChild.remove();
     count += 1 + Math.floor(Math.random() * 3);
-    countEl.textContent = count.toLocaleString('it-IT');
+    countEl.textContent = count.toLocaleString(EN ? 'en-GB' : 'it-IT');
     pts.push(12 + Math.random() * 16); pts.shift(); drawSpark();
   };
   for (let i = 0; i < 9; i++) add();
@@ -512,16 +515,19 @@ function contactForm() {
     }
     const priv = $('#f-privacy');
     priv.parentElement.classList.toggle('invalid', !priv.checked); ok = ok && priv.checked;
-    if (!ok) { $('#form-note').textContent = 'Compila i campi evidenziati e conferma di aver letto l’informativa privacy.'; return; }
+    if (!ok) { $('#form-note').textContent = EN ? 'Please fill in the highlighted fields and confirm you have read the privacy notice.' : 'Compila i campi evidenziati e conferma di aver letto l’informativa privacy.'; return; }
     const d = new FormData(form);
     const topics = d.getAll('topic');
+    const L = EN
+      ? { name: 'Name', org: 'Organisation', phone: 'Phone', topic: 'Interested in', subject: 'Information request', subj: 'Subject' }
+      : { name: 'Nome', org: 'Ente', phone: 'Telefono', topic: 'Interesse', subject: 'Richiesta informazioni', subj: 'Oggetto' };
     const head = [
-      `Nome: ${d.get('name')}`, d.get('ente') && `Ente: ${d.get('ente')}`, `E-mail: ${d.get('email')}`, d.get('phone') && `Telefono: ${d.get('phone')}`,
-      topics.length && `Interesse: ${topics.join(', ')}`,
+      `${L.name}: ${d.get('name')}`, d.get('ente') && `${L.org}: ${d.get('ente')}`, `E-mail: ${d.get('email')}`, d.get('phone') && `${L.phone}: ${d.get('phone')}`,
+      topics.length && `${L.topic}: ${topics.join(', ')}`,
     ].filter(Boolean);
     const body = `${head.join('\n')}\n\n${d.get('message')}`;
-    const subject = `Richiesta informazioni${topics.length ? ' — ' + topics.join(', ') : ''}`;
-    $('#mail-summary').textContent = `Oggetto: ${subject}\n\n${body}`;
+    const subject = `${L.subject}${topics.length ? ' — ' + topics.join(', ') : ''}`;
+    $('#mail-summary').textContent = `${L.subj}: ${subject}\n\n${body}`;
     $('#mail-link').href = `mailto:info@hypnosweb.it?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     dlg.showModal();
   });

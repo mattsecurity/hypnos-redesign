@@ -4,6 +4,8 @@
 .page .nav { position: sticky; color: var(--ink); background: rgba(255,255,255,.9); backdrop-filter: saturate(1.6) blur(18px); -webkit-backdrop-filter: saturate(1.6) blur(18px); box-shadow: 0 1px 0 var(--line); }
 .page .nav__back { font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 999px; border: 1px solid currentColor; transition: background .3s, color .3s, border-color .3s; }
 .page .nav__back:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+.page .nav__back { white-space: nowrap; }
+@media (max-width: 520px) { .page .nav { gap: 12px; } .page .nav__back { padding: 9px 13px; font-size: 13px; } .page .brand__word { width: 112px; height: 21px; } }
 .doc { flex: 1; padding: clamp(60px, 9vw, 120px) 0 clamp(80px, 10vw, 140px); }
 .doc .wrap { max-width: 860px; }
 .doc h1 { font-size: clamp(40px, 6vw, 76px); margin: 18px 0 18px; }
@@ -37,3 +39,5 @@
   .doc tr { padding: 14px 0; border-bottom: 1px solid var(--line); }
   .doc td { border: 0; padding: 2px 0; width: auto !important; }
 }
+.err p.err__en { margin: 30px auto 0; font-size: 14px; color: rgba(255,255,255,.55); }
+.err__en a { color: #fff; text-decoration: underline; text-underline-offset: 3px; }

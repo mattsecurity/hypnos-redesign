@@ -18,7 +18,8 @@ export function initPipeline({ gsap, ScrollTrigger, reduced }) {
   // phone: one caption under the dots instead of five wrapped labels
   const cap = $('#pv-cap'), capN = $('#pv-cap-n'), capT = $('#pv-cap-t'), capD = $('#pv-cap-d');
   let capActive = 0;
-  const STATUS = ['Apparecchiature', 'Controllo velocità', 'Verbali', 'Software', 'Supporto'];
+  const EN = document.documentElement.lang.startsWith('en');
+  const STATUS = EN ? ['Equipment', 'Speed check', 'Fines', 'Software', 'Support'] : ['Apparecchiature', 'Controllo velocità', 'Verbali', 'Software', 'Supporto'];
 
   // 1 · equipment
   const gear = $$('.pv-gear figure'), modes = $$('.pv-modes span');
@@ -43,7 +44,7 @@ export function initPipeline({ gsap, ScrollTrigger, reduced }) {
   // the rows are in the page (fake plates), so the table is never empty before the animation runs
   const rows = $$('#pv-rows .pv-row:not(.pv-row--head)');
   const bars = $('#pv-bars');
-  const MONTHS = ['Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott'], VALS = [.52, .64, .58, .42, .78, .9];
+  const MONTHS = EN ? ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'] : ['Mag', 'Giu', 'Lug', 'Ago', 'Set', 'Ott'], VALS = [.52, .64, .58, .42, .78, .9];
   bars.innerHTML = MONTHS.map(m => `<i data-m="${m}"></i>`).join('');
   const barEls = [...bars.children];
   // 5 · support

@@ -69,6 +69,13 @@ p { margin: 0; }
 .nav__links a:hover::after { transform: scaleX(1); transform-origin: left; }
 .nav__cta { font-size: 14px; font-weight: 600; padding: 10px 18px; border-radius: 999px; border: 1px solid currentColor; transition: background .3s, color .3s, border-color .3s; }
 .nav__cta:hover { background: var(--accent); border-color: var(--accent); color: #fff; }
+/* language switch (IT / EN): plain links between the Italian page and the English one under /en/ */
+.nav__lang { display: flex; align-items: center; gap: 2px; padding: 3px; border-radius: 999px; box-shadow: inset 0 0 0 1px color-mix(in srgb, currentColor 28%, transparent); font: 600 12px/1 var(--f-mono); letter-spacing: .06em; }
+.nav__lang a { padding: 7px 9px; border-radius: 999px; opacity: .62; transition: opacity .3s, background .3s, color .3s; }
+.nav__lang a:hover { opacity: 1; }
+.nav__lang a[aria-current] { opacity: 1; background: currentColor; }
+.nav__lang a[aria-current] span { color: var(--night); }
+.nav.is-light .nav__lang a[aria-current] span, .page .nav__lang a[aria-current] span { color: #fff; }
 .nav__burger { display: none; width: 40px; height: 40px; position: relative; }
 .nav__burger span { position: absolute; left: 10px; right: 10px; height: 1.5px; background: currentColor; transition: transform .4s var(--ease); }
 .nav__burger span:first-child { top: 16px; } .nav__burger span:last-child { top: 23px; }

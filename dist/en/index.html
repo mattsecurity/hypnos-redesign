@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>HYPNOS Srl — Road safety and parking technology</title>
+<meta name="description" content="Number plate recognition cameras, spot and average speed enforcement, ZTL gates, parking meters and software for Local Police forces and municipalities: rental, sale, installation and management. Milan, Italy.">
+<link rel="canonical" href="https://www.hypnosweb.it/en/">
+<link rel="alternate" hreflang="it" href="https://www.hypnosweb.it/">
+<link rel="alternate" hreflang="en" href="https://www.hypnosweb.it/en/">
+<link rel="alternate" hreflang="x-default" href="https://www.hypnosweb.it/">
+<meta name="theme-color" content="#07090d">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="HYPNOS Srl">
+<meta property="og:locale" content="en_GB">
+<meta property="og:locale:alternate" content="it_IT">
+<meta property="og:url" content="https://www.hypnosweb.it/en/">
+<meta property="og:title" content="HYPNOS Srl — Road safety and parking technology">
+<meta property="og:description" content="Number plate recognition cameras, spot and average speed enforcement, ZTL gates, parking meters and software for Local Police forces and municipalities: rental, sale, installation and management. Milan, Italy.">
+<meta property="og:image" content="https://www.hypnosweb.it/assets/og/hypnos-og.jpg">
+<meta property="og:image:type" content="image/jpeg">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="HYPNOS Srl · Via del Gonfalone 3, 20123 Milan, Italy · +39 02 4004 2393">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="HYPNOS Srl — Road safety and parking technology">
+<meta name="twitter:description" content="Number plate recognition cameras, spot and average speed enforcement, ZTL gates, parking meters and software for Local Police forces and municipalities: rental, sale, installation and management. Milan, Italy.">
+<meta name="twitter:image" content="https://www.hypnosweb.it/assets/og/hypnos-og.jpg">
+<link rel="icon" href="../assets/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/og/logo-180.png">
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "Organization", "@id": "https://www.hypnosweb.it/#azienda", "name": "HYPNOS Srl", "url": "https://www.hypnosweb.it/", "logo": "https://www.hypnosweb.it/assets/og/logo-512.png", "description": "Number plate recognition cameras, spot and average speed enforcement, ZTL gates, parking meters and software for Local Police forces and municipalities: rental, sale, installation and management. Milan, Italy.", "address": {"@type": "PostalAddress", "streetAddress": "Via del Gonfalone 3", "postalCode": "20123", "addressLocality": "Milano", "addressRegion": "MI", "addressCountry": "IT"}, "telephone": "+39 02 4004 2393", "faxNumber": "+39 02 5656 2961", "email": "info@hypnosweb.it", "vatID": "IT10682130967", "contactPoint": {"@type": "ContactPoint", "contactType": "customer service", "telephone": "+39 02 4004 2393", "email": "info@hypnosweb.it", "availableLanguage": "it"}, "areaServed": "IT"}</script>
+<link rel="preload" href="../assets/fonts/inter-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="preload" href="../assets/fonts/inter-tight-latin.woff2" as="font" type="font/woff2" crossorigin>
+<link rel="stylesheet" href="../css/fonts.css?v=20261118a">
+<link rel="stylesheet" href="../css/main.css?v=20261118a">
+<link rel="preload" href="../assets/img/aerial.webp" as="image">
+<script type="importmap">{"imports":{"three":"../vendor/three/three.module.js","three/addons/":"../vendor/three/addons/"}}</script>
+<script src="../vendor/gsap/gsap.min.js" defer></script>
+<script src="../vendor/gsap/ScrollTrigger.min.js" defer></script>
+<script src="../vendor/lenis/lenis.min.js" defer></script>
+<script type="module" src="../js/main.js?v=20261118a"></script>
+</head>
+<body class="is-loading">
+<a class="skip" href="#contenuto">Skip to content</a>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs><linearGradient id="hy-ring" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#ffa062"/><stop offset=".45" stop-color="#f26a21"/><stop offset=".8" stop-color="#d9501a"/><stop offset="1" stop-color="#f68a46"/></linearGradient></defs>
+  <!-- certification badge: path for the text around the ring -->
+  <path id="cb-ring" d="M19 100a81 81 0 1 1 162 0a81 81 0 1 1-162 0"/>
+  <!-- HYPNOS wordmark: letters follow the text colour, the O ring is always orange -->
+  <symbol id="hword" viewBox="0 0 397.7 73.4"><g fill="currentColor"><path d="M0 9H14V31H54.5V9H68V64H54.5V41.5H14V70.4L0 61.1Z"/><path d="M63.9 9H79.2L99.4 30.6L121 9H136.7L106 39.7V70.5L92.5 61.5V39.4Z"/><path d="M136.7 9H163.4A17.1 17.1 0 0 1 163.4 43.2H140.2V61.7L127.2 70.6V37.5L132 32.7H163.4A6.5 6.5 0 0 0 163.4 19.7H126Z"/><path d="M183.8 64V18A9 9 0 0 1 192.8 9H196.3L232.7 47.8V9H244.5V57A7 7 0 0 1 237.5 64H232.7L195.8 24.5V64Z"/><path d="M396 9V19.7H349.5A5.65 5.65 0 0 0 349.5 31H381A16.5 16.5 0 0 1 381 64H325.8L332.5 52.8H381A5.7 5.7 0 0 0 381 41.4H349.5A16.2 16.2 0 0 1 349.5 9Z"/></g><path d="M255.97 18.35L257.02 16.73L258.15 15.16L259.37 13.65L260.67 12.20L262.05 10.82L263.50 9.51L265.03 8.27L266.61 7.11L268.26 6.02L269.97 5.02L271.73 4.11L273.54 3.28L275.39 2.55L277.27 1.90L279.19 1.35L281.14 0.90L283.11 0.54L285.10 0.28L287.10 0.12L289.10 0.05L291.11 0.09L293.11 0.22L295.10 0.45L297.07 0.78L299.03 1.21L300.96 1.73L302.85 2.35L304.72 3.05L306.54 3.85L308.31 4.74L310.03 5.72L311.70 6.78L313.31 7.91L314.85 9.13L316.32 10.42L317.72 11.78L319.05 13.21L320.29 14.70L321.45 16.25L322.53 17.86L323.51 19.52L324.40 21.22L325.20 22.97L325.90 24.75L326.50 26.56L327.01 28.40L327.41 30.27L327.71 32.15L327.90 34.04L327.99 35.94L327.98 37.84L327.86 39.74L327.64 41.63L327.32 43.51L326.89 45.37L326.36 47.20L325.73 49.01L325.01 50.78L324.18 52.52L323.27 54.21L322.26 55.85L321.16 57.44L319.98 58.98L318.72 60.46L317.37 61.87L315.95 63.21L314.46 64.49L312.90 65.68L311.28 66.80L309.60 67.84L307.86 68.79L306.08 69.66L304.25 70.43L302.38 71.12L300.47 71.71L298.53 72.21L296.57 72.61L294.59 72.92L292.60 73.12L290.60 73.23L288.59 73.24L286.59 73.15L284.59 72.96L282.61 72.68L280.64 72.30L278.70 71.82L276.79 71.24L274.91 70.57L273.07 69.81L271.28 68.97L271.28 68.97L273.41 69.13L275.40 69.43L277.36 69.69L279.29 69.89L281.20 70.02L283.10 70.07L284.98 70.04L286.84 69.94L288.67 69.75L290.47 69.49L292.25 69.15L293.99 68.73L295.70 68.24L297.37 67.68L299.00 67.05L300.58 66.35L302.12 65.59L303.60 64.76L305.04 63.87L306.42 62.93L307.74 61.92L309.01 60.87L310.21 59.76L311.35 58.61L312.43 57.42L313.45 56.18L314.39 54.90L315.27 53.59L316.08 52.24L316.82 50.86L317.49 49.46L318.08 48.03L318.61 46.58L319.06 45.12L319.43 43.63L319.73 42.14L319.96 40.63L320.11 39.12L320.19 37.60L320.19 36.08L320.12 34.57L319.97 33.06L319.74 31.55L319.44 30.06L319.06 28.59L318.60 27.13L318.07 25.69L317.47 24.28L316.79 22.89L316.04 21.54L315.22 20.22L314.34 18.93L313.38 17.69L312.36 16.49L311.28 15.33L310.14 14.22L308.94 13.17L307.68 12.16L306.36 11.22L305.00 10.33L303.58 9.50L302.12 8.74L300.62 8.05L299.07 7.42L297.49 6.86L295.88 6.37L294.23 5.96L292.56 5.62L290.86 5.36L289.14 5.18L287.41 5.08L285.66 5.06L283.91 5.12L282.15 5.26L280.39 5.48L278.63 5.79L276.88 6.18L275.14 6.66L273.41 7.21L271.71 7.85L270.02 8.57L268.37 9.38L266.74 10.26L265.14 11.22L263.57 12.25L262.04 13.36L260.54 14.55L259.07 15.79L257.60 17.09L255.97 18.35Z" fill="url(#hy-ring)"/><path d="M282.70 72.69L281.62 72.50L280.54 72.27L279.47 72.02L278.42 71.74L277.37 71.43L276.32 71.09L275.29 70.72L274.28 70.32L273.27 69.90L272.28 69.45L271.30 68.98L270.33 68.47L269.38 67.95L268.45 67.39L267.54 66.81L266.64 66.21L265.76 65.58L264.90 64.93L264.06 64.26L263.24 63.56L262.44 62.84L261.66 62.11L260.91 61.35L260.18 60.57L259.47 59.77L258.79 58.95L258.13 58.11L257.50 57.26L256.89 56.39L256.31 55.50L255.76 54.60L255.23 53.68L254.74 52.75L254.27 51.81L253.82 50.85L253.41 49.89L253.03 48.91L252.68 47.92L252.35 46.92L252.06 45.92L251.79 44.90L251.56 43.88L251.36 42.86L251.19 41.83L251.05 40.79L250.94 39.76L250.86 38.71L250.82 37.67L250.80 36.63L250.82 35.59L250.86 34.54L250.94 33.50L251.05 32.46L251.19 31.43L251.37 30.40L251.57 29.37L251.84 28.36L252.16 27.36L252.51 26.38L252.90 25.41L253.33 24.45L253.79 23.51L254.28 22.58L254.81 21.68L255.36 20.79L255.95 19.93L256.56 19.08L257.20 18.25L257.86 17.45L258.55 16.67L259.26 15.91L260.00 15.18L260.76 14.47L261.54 13.79L262.34 13.14L263.15 12.51L263.99 11.90L264.84 11.33L265.71 10.78L266.59 10.26L267.49 9.77L268.40 9.31L269.32 8.87L270.25 8.47L271.18 8.09L272.13 7.75L273.09 7.43L274.04 7.15L275.01 6.89L275.98 6.67L275.98 6.67L275.25 7.40L274.47 7.96L273.68 8.49L272.89 9.02L272.12 9.56L271.36 10.10L270.60 10.65L269.87 11.22L269.14 11.80L268.44 12.39L267.74 13.00L267.07 13.62L266.41 14.26L265.77 14.91L265.14 15.57L264.54 16.25L263.95 16.95L263.38 17.65L262.84 18.37L262.31 19.11L261.81 19.85L261.33 20.61L260.87 21.38L260.43 22.17L260.01 22.96L259.62 23.76L259.26 24.58L258.92 25.40L258.60 26.23L258.32 27.07L258.06 27.92L257.83 28.78L257.63 29.64L257.47 30.51L257.36 31.38L257.28 32.26L257.22 33.14L257.18 34.01L257.17 34.89L257.18 35.76L257.20 36.63L257.25 37.50L257.32 38.37L257.42 39.23L257.53 40.09L257.66 40.95L257.82 41.80L258.00 42.65L258.19 43.50L258.41 44.34L258.65 45.18L258.91 46.01L259.18 46.83L259.47 47.66L259.78 48.47L260.11 49.29L260.46 50.09L260.83 50.89L261.21 51.69L261.62 52.48L262.04 53.26L262.48 54.04L262.94 54.81L263.42 55.57L263.92 56.33L264.44 57.08L264.98 57.82L265.54 58.55L266.11 59.28L266.71 59.99L267.32 60.70L267.96 61.40L268.61 62.09L269.29 62.77L269.98 63.44L270.70 64.10L271.43 64.74L272.19 65.38L272.96 66.01L273.75 66.63L274.57 67.23L275.40 67.83L276.25 68.41L277.12 68.99L278.01 69.56L278.92 70.12L279.85 70.69L280.79 71.26L281.75 71.87L282.70 72.69Z" fill="url(#hy-ring)"/></symbol>
+</svg>
+
+<!-- ============ LOADER / LOGO INTRO ============ -->
+<!-- opening veil: the hero rises out of the night while the wordmark writes itself in the nav -->
+<div class="loader" id="loader" aria-hidden="true"></div>
+
+<!-- ============ NAV ============ -->
+<header class="nav" id="nav">
+  <a class="brand" href="#top" aria-label="HYPNOS Srl — back to top">
+    <svg class="brand__word" viewBox="0 0 397.7 73.4" aria-hidden="true"><defs><clipPath id="hy-reveal"><rect id="hy-reveal-r" x="0" y="0" width="0" height="73.4"/></clipPath></defs><g fill="currentColor" clip-path="url(#hy-reveal)"><path d="M0 9H14V31H54.5V9H68V64H54.5V41.5H14V70.4L0 61.1Z"/><path d="M63.9 9H79.2L99.4 30.6L121 9H136.7L106 39.7V70.5L92.5 61.5V39.4Z"/><path d="M136.7 9H163.4A17.1 17.1 0 0 1 163.4 43.2H140.2V61.7L127.2 70.6V37.5L132 32.7H163.4A6.5 6.5 0 0 0 163.4 19.7H126Z"/><path d="M183.8 64V18A9 9 0 0 1 192.8 9H196.3L232.7 47.8V9H244.5V57A7 7 0 0 1 237.5 64H232.7L195.8 24.5V64Z"/><path d="M396 9V19.7H349.5A5.65 5.65 0 0 0 349.5 31H381A16.5 16.5 0 0 1 381 64H325.8L332.5 52.8H381A5.7 5.7 0 0 0 381 41.4H349.5A16.2 16.2 0 0 1 349.5 9Z"/></g><g class="rg"><path d="M255.97 18.35L257.02 16.73L258.15 15.16L259.37 13.65L260.67 12.20L262.05 10.82L263.50 9.51L265.03 8.27L266.61 7.11L268.26 6.02L269.97 5.02L271.73 4.11L273.54 3.28L275.39 2.55L277.27 1.90L279.19 1.35L281.14 0.90L283.11 0.54L285.10 0.28L287.10 0.12L289.10 0.05L291.11 0.09L293.11 0.22L295.10 0.45L297.07 0.78L299.03 1.21L300.96 1.73L302.85 2.35L304.72 3.05L306.54 3.85L308.31 4.74L310.03 5.72L311.70 6.78L313.31 7.91L314.85 9.13L316.32 10.42L317.72 11.78L319.05 13.21L320.29 14.70L321.45 16.25L322.53 17.86L323.51 19.52L324.40 21.22L325.20 22.97L325.90 24.75L326.50 26.56L327.01 28.40L327.41 30.27L327.71 32.15L327.90 34.04L327.99 35.94L327.98 37.84L327.86 39.74L327.64 41.63L327.32 43.51L326.89 45.37L326.36 47.20L325.73 49.01L325.01 50.78L324.18 52.52L323.27 54.21L322.26 55.85L321.16 57.44L319.98 58.98L318.72 60.46L317.37 61.87L315.95 63.21L314.46 64.49L312.90 65.68L311.28 66.80L309.60 67.84L307.86 68.79L306.08 69.66L304.25 70.43L302.38 71.12L300.47 71.71L298.53 72.21L296.57 72.61L294.59 72.92L292.60 73.12L290.60 73.23L288.59 73.24L286.59 73.15L284.59 72.96L282.61 72.68L280.64 72.30L278.70 71.82L276.79 71.24L274.91 70.57L273.07 69.81L271.28 68.97L271.28 68.97L273.41 69.13L275.40 69.43L277.36 69.69L279.29 69.89L281.20 70.02L283.10 70.07L284.98 70.04L286.84 69.94L288.67 69.75L290.47 69.49L292.25 69.15L293.99 68.73L295.70 68.24L297.37 67.68L299.00 67.05L300.58 66.35L302.12 65.59L303.60 64.76L305.04 63.87L306.42 62.93L307.74 61.92L309.01 60.87L310.21 59.76L311.35 58.61L312.43 57.42L313.45 56.18L314.39 54.90L315.27 53.59L316.08 52.24L316.82 50.86L317.49 49.46L318.08 48.03L318.61 46.58L319.06 45.12L319.43 43.63L319.73 42.14L319.96 40.63L320.11 39.12L320.19 37.60L320.19 36.08L320.12 34.57L319.97 33.06L319.74 31.55L319.44 30.06L319.06 28.59L318.60 27.13L318.07 25.69L317.47 24.28L316.79 22.89L316.04 21.54L315.22 20.22L314.34 18.93L313.38 17.69L312.36 16.49L311.28 15.33L310.14 14.22L308.94 13.17L307.68 12.16L306.36 11.22L305.00 10.33L303.58 9.50L302.12 8.74L300.62 8.05L299.07 7.42L297.49 6.86L295.88 6.37L294.23 5.96L292.56 5.62L290.86 5.36L289.14 5.18L287.41 5.08L285.66 5.06L283.91 5.12L282.15 5.26L280.39 5.48L278.63 5.79L276.88 6.18L275.14 6.66L273.41 7.21L271.71 7.85L270.02 8.57L268.37 9.38L266.74 10.26L265.14 11.22L263.57 12.25L262.04 13.36L260.54 14.55L259.07 15.79L257.60 17.09L255.97 18.35Z" fill="url(#hy-ring)"/><path d="M282.70 72.69L281.62 72.50L280.54 72.27L279.47 72.02L278.42 71.74L277.37 71.43L276.32 71.09L275.29 70.72L274.28 70.32L273.27 69.90L272.28 69.45L271.30 68.98L270.33 68.47L269.38 67.95L268.45 67.39L267.54 66.81L266.64 66.21L265.76 65.58L264.90 64.93L264.06 64.26L263.24 63.56L262.44 62.84L261.66 62.11L260.91 61.35L260.18 60.57L259.47 59.77L258.79 58.95L258.13 58.11L257.50 57.26L256.89 56.39L256.31 55.50L255.76 54.60L255.23 53.68L254.74 52.75L254.27 51.81L253.82 50.85L253.41 49.89L253.03 48.91L252.68 47.92L252.35 46.92L252.06 45.92L251.79 44.90L251.56 43.88L251.36 42.86L251.19 41.83L251.05 40.79L250.94 39.76L250.86 38.71L250.82 37.67L250.80 36.63L250.82 35.59L250.86 34.54L250.94 33.50L251.05 32.46L251.19 31.43L251.37 30.40L251.57 29.37L251.84 28.36L252.16 27.36L252.51 26.38L252.90 25.41L253.33 24.45L253.79 23.51L254.28 22.58L254.81 21.68L255.36 20.79L255.95 19.93L256.56 19.08L257.20 18.25L257.86 17.45L258.55 16.67L259.26 15.91L260.00 15.18L260.76 14.47L261.54 13.79L262.34 13.14L263.15 12.51L263.99 11.90L264.84 11.33L265.71 10.78L266.59 10.26L267.49 9.77L268.40 9.31L269.32 8.87L270.25 8.47L271.18 8.09L272.13 7.75L273.09 7.43L274.04 7.15L275.01 6.89L275.98 6.67L275.98 6.67L275.25 7.40L274.47 7.96L273.68 8.49L272.89 9.02L272.12 9.56L271.36 10.10L270.60 10.65L269.87 11.22L269.14 11.80L268.44 12.39L267.74 13.00L267.07 13.62L266.41 14.26L265.77 14.91L265.14 15.57L264.54 16.25L263.95 16.95L263.38 17.65L262.84 18.37L262.31 19.11L261.81 19.85L261.33 20.61L260.87 21.38L260.43 22.17L260.01 22.96L259.62 23.76L259.26 24.58L258.92 25.40L258.60 26.23L258.32 27.07L258.06 27.92L257.83 28.78L257.63 29.64L257.47 30.51L257.36 31.38L257.28 32.26L257.22 33.14L257.18 34.01L257.17 34.89L257.18 35.76L257.20 36.63L257.25 37.50L257.32 38.37L257.42 39.23L257.53 40.09L257.66 40.95L257.82 41.80L258.00 42.65L258.19 43.50L258.41 44.34L258.65 45.18L258.91 46.01L259.18 46.83L259.47 47.66L259.78 48.47L260.11 49.29L260.46 50.09L260.83 50.89L261.21 51.69L261.62 52.48L262.04 53.26L262.48 54.04L262.94 54.81L263.42 55.57L263.92 56.33L264.44 57.08L264.98 57.82L265.54 58.55L266.11 59.28L266.71 59.99L267.32 60.70L267.96 61.40L268.61 62.09L269.29 62.77L269.98 63.44L270.70 64.10L271.43 64.74L272.19 65.38L272.96 66.01L273.75 66.63L274.57 67.23L275.40 67.83L276.25 68.41L277.12 68.99L278.01 69.56L278.92 70.12L279.85 70.69L280.79 71.26L281.75 71.87L282.70 72.69Z" fill="url(#hy-ring)"/></g></svg>
+  </a>
+  <nav class="nav__links" id="nav-links" aria-label="Main navigation">
+    <a href="#soluzioni">Solutions</a>
+    <a href="#sosta">Parking</a>
+    <a href="#verbali">Fines</a>
+    <a href="#software">Software</a>
+    <a href="#azienda">Company</a>
+  </nav>
+  <div class="nav__lang" role="group" aria-label="Language · Lingua"><a href="../" hreflang="it" lang="it" aria-label="Italiano"><span>IT</span></a><a href="./" hreflang="en" lang="en" aria-current="page" aria-label="English"><span>EN</span></a></div>
+  <a class="nav__cta" href="#contatti">Contact</a>
+  <button class="nav__burger" id="burger" aria-label="Open the menu" aria-expanded="false" aria-controls="nav-links"><span></span><span></span></button>
+</header>
+
+<main id="top">
+
+<!-- ============ STORY (scroll-driven 3D) ============ -->
+<section class="story" id="story" aria-label="From the city to the number plate: how plate recognition works">
+  <div class="story__sticky">
+    <canvas class="story__canvas" id="story-canvas" aria-hidden="true"></canvas>
+    <img class="story__fallback" src="../assets/img/aerial.webp" alt="Aerial view of a Milan boulevard at blue hour" width="1536" height="1024">
+    <div class="story__shade" aria-hidden="true"></div>
+
+    <!-- aerial reticle on the vehicle -->
+    <div class="reticle" id="reticle" aria-hidden="true">
+      <i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i>
+      <div class="reticle__tag"><b>VEHICLE IN TRANSIT</b><span>BOULEVARD · LANE 1 · EASTBOUND</span></div>
+    </div>
+    <div class="target" id="target" aria-hidden="true"><i></i><span>CHECKPOINT · CAM 04</span></div>
+
+    <!-- camera feed HUD -->
+    <div class="feed" id="feed" aria-hidden="true">
+      <div class="feed__frame"><i class="c tl"></i><i class="c tr"></i><i class="c bl"></i><i class="c br"></i></div>
+      <div class="feed__top">
+        <span class="feed__rec"><i></i>REC</span>
+        <span>CAM 04 · BOULEVARD · EASTBOUND</span>
+        <span class="feed__clock" id="feed-clock">--</span>
+      </div>
+      <div class="box box--car" id="box-car"><span>VEHICLE</span></div>
+      <div class="box box--plate" id="box-plate"><i class="scan"></i></div>
+      <div class="read" id="read">
+        <div class="read__crop"><canvas id="plate-crop" width="520" height="110"></canvas></div>
+        <div class="read__ocr" id="ocr">·······</div>
+        <div class="read__meta"><span>ITALY</span><span>FICTITIOUS PLATE</span></div>
+      </div>
+      <ul class="checks" id="checks">
+        <li><span>Plate</span><b>AB 123 CD</b><em class="ok"></em></li>
+        <li><span>Detected speed</span><b>47 km/h</b><em class="ok"></em></li>
+        <li><span>Checkpoint</span><b>CAM 04</b><em class="ok"></em></li>
+        <li><span>Transit</span><b>Logged</b><em class="ok"></em></li>
+        <li><span>Management system</span><b>Data available</b><em class="ok"></em></li>
+      </ul>
+      <div class="logged" id="logged"><i></i>Transit logged <span id="logged-time"></span></div>
+      <div class="feed__bottom"><span>Number plate recognition camera</span><span>Illustrative simulation · fictitious plate</span></div>
+    </div>
+
+    <!-- chapters -->
+    <div class="chapters">
+      <article class="chapter chapter--hero" data-in="-1" data-out=".10">
+        <p class="eyebrow">Road safety · Parking · Public sector</p>
+        <h1>The city<br>has a thousand eyes.<br><span>We make them smart.</span></h1>
+        <p class="lead">Number plate recognition cameras, spot and average speed enforcement, ZTL gates, parking meters and software. Working alongside municipalities and Local Police forces, from design to day-to-day management.</p>
+      </article>
+      <article class="chapter" data-in=".13" data-out=".27">
+        <p class="eyebrow"><b>01</b> The city</p>
+        <h2>Every day,<br>thousands of vehicles.</h2>
+        <p>Traffic flows, access, speed, parking. Every street tells a story to those who can read it.</p>
+      </article>
+      <article class="chapter" data-in=".31" data-out=".45">
+        <p class="eyebrow"><b>02</b> The vehicle</p>
+        <h2>A car turns<br>into the boulevard.</h2>
+        <p>In a hundred metres it will reach a checkpoint. The system is already ready to recognise it.</p>
+      </article>
+      <article class="chapter" data-in=".5" data-out=".62">
+        <p class="eyebrow"><b>03</b> The checkpoint</p>
+        <h2>An eye that<br>never looks away.</h2>
+        <p>Number plate recognition cameras for rental or sale, installed and maintained by HYPNOS.</p>
+      </article>
+      <article class="chapter chapter--feed" data-in=".67" data-out=".79">
+        <p class="eyebrow"><b>04</b> The reading</p>
+        <h2>The plate, in a<br>split second.</h2>
+        <p>The camera reads the number plate of the passing vehicle.</p>
+      </article>
+      <article class="chapter chapter--feed" data-in=".81" data-out="1.2">
+        <p class="eyebrow"><b>05</b> From the street to the office</p>
+        <h2>The data reaches<br>the management system.</h2>
+        <p>We develop road safety management software, backed by professional, ongoing support.</p>
+      </article>
+    </div>
+
+    <div class="rail" id="rail" aria-hidden="true">
+      <span data-at="0">City</span><span data-at=".31">Vehicle</span><span data-at=".5">Checkpoint</span><span data-at=".67">Reading</span><span data-at=".81">System</span>
+      <i id="rail-fill"></i>
+    </div>
+    <div class="scroll-hint" id="scroll-hint" aria-hidden="true"><span>Scroll to follow the vehicle</span><i></i></div>
+  </div>
+</section>
+
+<!-- ============ MANIFESTO ============ -->
+<section class="manifesto" id="contenuto" tabindex="-1" data-nav="light">
+  <div class="wrap">
+    <p class="eyebrow">Who we are</p>
+    <p class="manifesto__text" id="manifesto">HYPNOS supports Local Police departments and public authorities with innovative technology and software development. We follow every project from needs analysis to installation, from maintenance to day-to-day operations, from back office to front end.</p>
+    <div class="manifesto__pills">
+      <span>Rental</span><span>Sale</span><span>Integrated management</span><span>Technical support</span><span>Consulting</span>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOLUZIONI ============ -->
+<section class="solutions" id="soluzioni" data-nav="light">
+  <div class="wrap solutions__head">
+    <div>
+      <p class="eyebrow">Our solutions</p>
+      <h2 class="split">Six tools.<br>One single partner.</h2>
+    </div>
+    <p class="solutions__intro">Equipment for rental or sale, installed and maintained by our technicians, with full service management when needed.</p>
+  </div>
+  <div class="hscroll" id="hscroll">
+    <div class="hscroll__track" id="htrack">
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/anpr.webp" alt="Number plate recognition camera on a pole at dusk" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">01</span>
+          <h3>Number plate recognition cameras</h3>
+          <p>Number plate recognition cameras for rental or sale, with installation, maintenance and technical support.</p>
+          <ul><li>Rental or sale</li><li>Installation and maintenance</li><li>Technical support</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/autovelox.webp" alt="Fixed speed enforcement unit beside a rural road" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">02</span>
+          <h3>Spot speed enforcement</h3>
+          <p>Equipment for spot speed enforcement, for rental or sale, with management of the integrated service for the penalty notices it generates.</p>
+          <ul><li>Rental or sale</li><li>Installation and maintenance</li><li>Penalty notice management</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/tutor.webp" alt="Average speed enforcement gantry over a motorway at blue hour" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">03</span>
+          <h3>Average speed enforcement</h3>
+          <p>Systems for average speed enforcement over a road section, for rental or sale, with full management and the integrated penalty notice service.</p>
+          <ul><li>Rental or sale</li><li>Speed enforcement</li><li>Penalty notice management</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/ztl.webp" alt="ZTL gate with an illuminated sign in a historic town centre" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">04</span>
+          <h3>ZTL gates</h3>
+          <p>Equipment for limited traffic zones (ZTL), for rental or sale, with installation, maintenance and management.</p>
+          <ul><li>Rental or sale</li><li>Installation and maintenance</li><li>Management</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/parcometro.webp" alt="Parking meter on a Milan pavement next to blue parking bays" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">05</span>
+          <h3>Parking meters</h3>
+          <p>Integrated management of paid parking: supply, installation and maintenance of parking meters, road markings and qualified staff. Turnkey.</p>
+          <ul><li>Supply and installation</li><li>Road markings</li><li>Service management</li></ul>
+        </div>
+      </article>
+      <article class="card">
+        <div class="card__media"><img src="../assets/img/control.webp" alt="Control room with road surveillance monitors" loading="lazy" width="1536" height="1024"></div>
+        <div class="card__body">
+          <span class="card__n">06</span>
+          <h3>Software for the public sector</h3>
+          <p>We develop road safety management software and support public authorities with professional, ongoing assistance.</p>
+          <ul><li>Custom development</li><li>Training</li><li>Ongoing assistance</li></ul>
+        </div>
+      </article>
+      <div class="card card--end">
+        <p>Not sure where to start?</p>
+        <a class="btn btn--dark" href="#contatti">Let’s talk</a>
+      </div>
+    </div>
+  </div>
+  <div class="hdots" id="hdots" aria-hidden="true"></div>
+</section>
+
+<!-- ============ SOSTA ============ -->
+<section class="parking" id="sosta" data-nav="light">
+  <div class="wrap parking__intro">
+    <p class="eyebrow">Paid parking management</p>
+    <h2 class="split">Parking, turnkey.</h2>
+    <p>We support Local Police departments in the integrated management of areas where parking is regulated and paid for at parking meters. Supply, installation, maintenance, road markings and management: all turnkey.</p>
+  </div>
+  <div class="parking__pin">
+    <div class="wrap parking__stage">
+      <ol class="pk-steps">
+        <li tabindex="0" role="button"><i>01</i><div><b>Supply</b><span>Supply of parking meters.</span></div></li>
+        <li tabindex="0" role="button"><i>02</i><div><b>Installation</b><span>Installation of parking meters on the street.</span></div></li>
+        <li tabindex="0" role="button"><i>03</i><div><b>Road markings</b><span>Painting road markings and putting up road signs.</span></div></li>
+        <li tabindex="0" role="button"><i>04</i><div><b>Maintenance</b><span>Parking meter maintenance.</span></div></li>
+        <li tabindex="0" role="button"><i>05</i><div><b>Management</b><span>Management by highly qualified staff.</span></div></li>
+      </ol>
+      <div class="pk-cap" id="pk-cap" aria-live="polite"><p><small id="pk-cap-n">01 / 05</small><b id="pk-cap-t">Supply</b></p><span id="pk-cap-d">Supply of parking meters.</span></div>
+      <div class="pk-view">
+        <canvas id="pk-canvas" aria-label="Illustrative simulation of a street with paid parking bays"></canvas>
+        <div class="pk-phase" id="pk-phase"><b>01</b> Supply</div>
+        <div class="pk-front" id="pk-front"><img src="../assets/img/parcometro-front.webp" alt="Parking meter on a Milan pavement" loading="lazy" width="1536" height="1024"><span class="pk-front__cap">Supply of parking meters</span></div>
+        <div class="pk-install" id="pk-install"><span>Installing the parking meter</span><b><i></i></b></div>
+        <div class="pk-hud">
+          <div class="pk-chip"><span>Occupancy</span><b id="pk-occ">0%</b><em class="pk-bar"><i id="pk-occbar"></i></em></div>
+          <div class="pk-chip"><span>Free bays</span><b id="pk-free">16</b></div>
+          <div class="pk-chip"><span>Collected (simulation)</span><b id="pk-rev">€0.00</b></div>
+        </div>
+        <div class="pk-toasts" id="pk-toasts" aria-live="off"></div>
+        <p class="pk-note">Illustrative simulation · fictitious data</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ VERBALI / SERVIZIO INTEGRATO ============ -->
+<section class="pipeline" id="verbali" data-nav="dark">
+  <div class="pipeline__bg" aria-hidden="true"><img src="../assets/img/tutor.webp" alt="" loading="lazy"></div>
+  <div class="pipeline__pin">
+    <div class="wrap pipeline__grid">
+      <div class="pipeline__side">
+        <div class="pipeline__head">
+          <p class="eyebrow eyebrow--light">Spot and average speed enforcement, ZTL and their management</p>
+          <h2 class="split">From detection to penalty notice.<br>One integrated service.</h2>
+          <p>We support Local Police departments with the rental and/or sale of vehicle speed enforcement equipment and the management of the integrated service for the penalty notices it generates.</p>
+        </div>
+        <ol class="pv-steps" id="pv-steps">
+          <li tabindex="0" role="button"><i>01</i><b>Equipment</b><span>Spot and average speed enforcement and ZTL gates, for rental and/or sale.</span></li>
+          <li tabindex="0" role="button"><i>02</i><b>Speed enforcement</b><span>The equipment measures vehicle speeds.</span></li>
+          <li tabindex="0" role="button"><i>03</i><b>Penalty notice management</b><span>The integrated service for the penalty notices generated.</span></li>
+          <li tabindex="0" role="button"><i>04</i><b>Software</b><span>Road safety management software.</span></li>
+          <li tabindex="0" role="button"><i>05</i><b>Ongoing support</b><span>Professional support for public authorities.</span></li>
+        </ol>
+        <div class="pv-cap" id="pv-cap" aria-live="polite"><p><small id="pv-cap-n">01 / 05</small><b id="pv-cap-t">Equipment</b></p><span id="pv-cap-d">Spot and average speed enforcement and ZTL gates, for rental and/or sale.</span></div>
+      </div>
+      <div class="pv-panel" id="pv-panel" aria-label="Illustrative example of how an event is handled">
+        <div class="pv-bar"><span class="pv-dots"><i></i><i></i><i></i></span><span class="pv-bar__id">Case<span class="pv-bar__x"> file</span> · <b id="pv-id">EV-26-0418</b></span><span class="pv-status" id="pv-status">Equipment</span></div>
+        <div class="pv-body">
+          <!-- 1. Apparecchiature -->
+          <div class="pv-scene" data-s="0">
+            <div class="pv-gear">
+              <figure><img src="../assets/img/tutor-sm.webp" alt="" loading="lazy"><figcaption>Average speed</figcaption></figure>
+              <figure><img src="../assets/img/autovelox-sm.webp" alt="" loading="lazy"><figcaption>Spot speed</figcaption></figure>
+              <figure><img src="../assets/img/ztl-sm.webp" alt="" loading="lazy"><figcaption>ZTL</figcaption></figure>
+            </div>
+            <div class="pv-modes"><span>Rental</span><span>Sale</span><span>Management</span></div>
+          </div>
+          <!-- 2. Controllo della velocità -->
+          <div class="pv-scene" data-s="1">
+            <div class="pv-shot">
+              <div class="pv-frame" style="--car-x:49.8%;--car-y:49.6%;--car-w:41%;--car-h:54%;--pl-x:49.93%;--pl-y:65.58%;--pl-w:12.2%;--pl-h:5.6%">
+                <img src="../assets/img/speed-shot.webp" alt="" loading="lazy">
+                <span class="pv-box pv-box--car"><em>Vehicle</em></span>
+                <span class="pv-box pv-box--plate"></span>
+              </div>
+              <span class="pv-tag">Speed enforcement · simulation</span>
+              <span class="pv-time" id="pv-time">16/10/2026 · 18:42:07</span>
+            </div>
+            <div class="pv-meter">
+              <div class="pv-gauge"><svg viewBox="0 0 120 70"><path d="M10 64 A50 50 0 0 1 110 64" class="g-bg"/><path d="M10 64 A50 50 0 0 1 110 64" class="g-val" id="pv-gauge"/></svg><b id="pv-speed">82</b><span>km/h detected</span></div>
+              <div class="pv-lens"><div class="pv-lens__crop"><img src="../assets/img/speed-shot.webp" alt="" loading="lazy"></div><p><span>Plate reading</span><b class="pv-ocr" id="pv-ocr">AB 123 CD</b></p></div>
+              <div class="pv-facts"><p><span>Limit (example)</span><b>70 km/h</b></p><p><span>Outcome</span><b class="pv-verdict">Over the limit</b></p></div>
+            </div>
+          </div>
+          <!-- 3. Gestione dei verbali -->
+          <div class="pv-scene" data-s="2">
+            <div class="pv-doc">
+              <header><b>Penalty notice</b><span>Integrated penalty notice service</span></header>
+              <dl>
+                <div><dt>Plate</dt><dd data-type="AB 123 CD">AB 123 CD</dd></div>
+                <div><dt>Detected speed</dt><dd data-type="82 km/h">82 km/h</dd></div>
+                <div><dt>Date</dt><dd data-type="16/10/2026 · 18:42">16/10/2026 · 18:42</dd></div>
+                <div><dt>Device</dt><dd data-type="Speed check">Speed check</dd></div>
+                <div><dt>Status</dt><dd data-type="Processing">Processing</dd></div>
+              </dl>
+              <footer><svg class="pv-qr" viewBox="0 0 21 21" id="pv-qr"></svg><span>Illustrative example<br><small>fictitious data and plate</small></span></footer>
+            </div>
+          </div>
+          <!-- 4. Software -->
+          <div class="pv-scene" data-s="3">
+            <div class="pv-soft">
+              <div class="pv-rows" id="pv-rows"><div class="pv-row pv-row--head"><span>Plate</span><span>Device</span><span>Status</span></div><div class="pv-row"><span>AB 123 CD</span><span>Spot speed</span><em>Handled</em></div><div class="pv-row"><span>CD 456 EF</span><span>Average speed</span><em>Handled</em></div><div class="pv-row"><span>EF 789 GH</span><span>ZTL</span><em>Handled</em></div><div class="pv-row"><span>XY 000 ZZ</span><span>Spot speed</span><em>Handled</em></div><div class="pv-row"><span>AA 111 AA</span><span>Average speed</span><em>Handled</em></div></div>
+              <div class="pv-bars" id="pv-bars"></div>
+            </div>
+          </div>
+          <!-- 5. Supporto continuativo -->
+          <div class="pv-scene" data-s="4">
+            <ul class="pv-support">
+              <li><i></i><b>Needs analysis</b></li>
+              <li><i></i><b>Support during design</b></li>
+              <li><i></i><b>Device installation and maintenance</b></li>
+              <li><i></i><b>Day-to-day operations, from back office to front end</b></li>
+              <li><i></i><b>Professional, ongoing support</b></li>
+            </ul>
+          </div>
+        </div>
+        <p class="pv-note">Illustrative example · fictitious data</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ SOFTWARE ============ -->
+<section class="software" id="software" data-nav="light">
+  <div class="wrap software__grid">
+    <div class="software__copy">
+      <p class="eyebrow">Software development for Local Police and public authorities</p>
+      <h2 class="split">Less complexity.<br>More control.</h2>
+      <p>Technology on the street needs clear tools in the office. We develop road safety management software and stay alongside operators with professional, ongoing support.</p>
+      <div class="kpis">
+        <div><b>Gov</b><span>Software for Local Police forces and public authorities</span></div>
+        <div><b>1</b><span>Partner, from analysis to day-to-day operations</span></div>
+        <div><b>360°</b><span>From back office to front end</span></div>
+      </div>
+    </div>
+    <div class="dash" id="dash" aria-label="Illustrative example of a management interface">
+      <div class="dash__bar"><span class="dash__dots"><i></i><i></i><i></i></span><span>HYPNOS · Transit centre</span><span class="dash__live"><i></i>LIVE</span></div>
+      <div class="dash__body">
+        <div class="dash__map">
+          <img src="../assets/img/aerial.webp" alt="" loading="lazy">
+          <span class="dash__pin" style="--x:63%;--y:52%"><i></i>CAM 04</span>
+          <span class="dash__pin" style="--x:22%;--y:30%"><i></i>ZTL 02</span>
+          <span class="dash__pin" style="--x:80%;--y:76%"><i></i>VEL 01</span>
+        </div>
+        <div class="dash__side">
+          <div class="dash__stat"><span>Transits today</span><b id="dash-count">12,480</b><svg viewBox="0 0 120 32" class="spark"><polyline id="spark" points=""/></svg></div>
+          <div class="dash__list"><div class="dash__head"><span>Time</span><span>Plate</span><span>Gate</span><span>Status</span></div><ul id="dash-list"></ul></div>
+        </div>
+      </div>
+      <p class="dash__note">Illustrative interface · fictitious data</p>
+    </div>
+  </div>
+</section>
+
+<!-- ============ METODO ============ -->
+<section class="method" id="metodo" data-nav="light">
+  <div class="wrap">
+    <div class="method__head">
+      <p class="eyebrow">Our method</p>
+      <h2 class="split">From analysis to management.<br>Always by your side.</h2>
+    </div>
+    <div class="method__track" id="method">
+      <div class="method__line"><i id="method-fill"></i></div>
+      <div class="method__step"><span>01</span><h3>Needs analysis</h3><p>We start from the client’s needs.</p></div>
+      <div class="method__step"><span>02</span><h3>Design</h3><p>Support during design.</p></div>
+      <div class="method__step"><span>03</span><h3>Installation</h3><p>Device installation.</p></div>
+      <div class="method__step"><span>04</span><h3>Maintenance</h3><p>Device maintenance and technical support.</p></div>
+      <div class="method__step"><span>05</span><h3>Day-to-day operations</h3><p>Day-to-day operations, from back office to front end.</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ AZIENDA + TRIBUTI ============ -->
+<section class="company" id="azienda" data-nav="dark">
+  <div class="wrap company__grid">
+    <div class="company__main">
+      <p class="eyebrow eyebrow--light">HYPNOS Srl · Milan</p>
+      <h2 class="split">Technology for those who look after the city.</h2>
+      <p>We work with Local Police commanders, officials and officers, offering a wide range of services: from rental and sale to technical support for the management systems we design. From presenting products and services for office and street work, all the way to installation.</p>
+      <ul class="audience"><li>Commanders</li><li>Officials</li><li>Local Police officers</li><li>Municipalities and local authorities</li></ul>
+    </div>
+    <aside class="tributi">
+      <span class="tributi__tag">Also</span>
+      <h3>Local tax management</h3>
+      <p>A reliable partner for municipalities and local authorities, helping them reach their goals.</p>
+      <a class="link-arrow" href="#contatti">Request information <span aria-hidden="true">→</span></a>
+    </aside>
+  </div>
+  <div class="marquee" aria-hidden="true"><div class="marquee__inner"><span>Plate recognition</span><span>Spot speed enforcement</span><span>Average speed enforcement</span><span>ZTL</span><span>Parking meters</span><span>Software</span><span>Local tax management</span><span>Plate recognition</span><span>Spot speed enforcement</span><span>Average speed enforcement</span><span>ZTL</span><span>Parking meters</span><span>Software</span><span>Local tax management</span></div></div>
+</section>
+
+<!-- ============ CERTIFICAZIONI ============ -->
+<!-- badges drawn ad hoc: the ISO logo may not be used by certified companies.
+     When available, add the certification body's mark and the certificate numbers in .certsec__foot. -->
+<section class="certsec" id="certificazioni" data-nav="light">
+  <div class="wrap">
+    <div class="certsec__head">
+      <p class="eyebrow">Certified management systems</p>
+      <h2 class="split">Quality, environment, data.<br>All certified.</h2>
+      <p class="certsec__intro">HYPNOS operates three management systems certified to international ISO standards and audited by an independent certification body. Hover over or tap a certification to see what it guarantees.</p>
+    </div>
+    <div class="certsec__grid">
+      <article class="cert" data-cert>
+        <div class="cert__face">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
+            <circle class="cbadge__band" cx="100" cy="100" r="81"/>
+            <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">QUALITY MANAGEMENT SYSTEM · ISO 9001 · CERTIFIED ·</textPath></text></g>
+            <circle class="cbadge__disc" cx="100" cy="100" r="70"/>
+            <circle class="cbadge__gold" cx="100" cy="100" r="66"/>
+            <g class="cbadge__icon"><path d="M91 56l6 6 12-12"/></g>
+            <text class="cbadge__pre" x="100" y="86">ISO</text>
+            <text class="cbadge__code" x="100" y="121">9001</text>
+            <text class="cbadge__ed" x="100" y="141">:2015</text>
+          </svg>
+          <p class="cert__code">ISO 9001:2015</p>
+          <h3>Quality management</h3>
+          <p class="cert__lead">Defined, measured and continuously improved processes: from supply and installation through to after-sales support.</p>
+          <button class="cert__more" type="button" aria-expanded="false" aria-controls="cert-9001">What it guarantees <i aria-hidden="true"></i></button>
+        </div>
+        <div class="cert__detail" id="cert-9001">
+          <p class="cert__k">ISO 9001:2015 · What it requires</p>
+          <ul><li>Documented processes for supply, installation, maintenance and support</li><li>Supplier control and qualification</li><li>Customer satisfaction measurement and complaint handling</li><li>Improvement objectives and periodic third-party audits</li></ul>
+          <p class="cert__k">For your department</p>
+          <p class="cert__why">Predictable services and response times, backed by an audited method. Often a requirement in public tenders.</p>
+          <button class="cert__close" type="button" aria-label="Close details for ISO 9001:2015">Close <i aria-hidden="true"></i></button>
+        </div>
+      </article>
+      <article class="cert" data-cert>
+        <div class="cert__face">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
+            <circle class="cbadge__band" cx="100" cy="100" r="81"/>
+            <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">ENVIRONMENTAL MANAGEMENT SYSTEM · CERTIFIED ·</textPath></text></g>
+            <circle class="cbadge__disc" cx="100" cy="100" r="70"/>
+            <circle class="cbadge__gold" cx="100" cy="100" r="66"/>
+            <g class="cbadge__icon"><path d="M90 66c0-13 9-21 21-21 0 13-8 21-21 21z"/><path d="M90 66l11-11"/></g>
+            <text class="cbadge__pre" x="100" y="86">ISO</text>
+            <text class="cbadge__code" x="100" y="121">14001</text>
+            <text class="cbadge__ed" x="100" y="141">:2015</text>
+          </svg>
+          <p class="cert__code">ISO 14001:2015</p>
+          <h3>Environmental management</h3>
+          <p class="cert__lead">The environmental impact of our work, from transport to waste, is identified, kept under control and reduced.</p>
+          <button class="cert__more" type="button" aria-expanded="false" aria-controls="cert-14001">What it guarantees <i aria-hidden="true"></i></button>
+        </div>
+        <div class="cert__detail" id="cert-14001">
+          <p class="cert__k">ISO 14001:2015 · What it requires</p>
+          <ul><li>Analysis of environmental aspects: energy, transport, materials</li><li>Proper waste management, including electronic waste</li><li>Ongoing compliance with environmental legislation</li><li>Measurable, regularly reviewed environmental objectives</li></ul>
+          <p class="cert__k">For your department</p>
+          <p class="cert__why">A supplier that reduces the impact of its work on the street and in the office, in line with the Minimum Environmental Criteria (CAM) for Italian public procurement.</p>
+          <button class="cert__close" type="button" aria-label="Close details for ISO 14001:2015">Close <i aria-hidden="true"></i></button>
+        </div>
+      </article>
+      <article class="cert" data-cert>
+        <div class="cert__face">
+          <svg class="cbadge" width="158" height="158" viewBox="0 0 200 200" aria-hidden="true">
+            <circle class="cbadge__halo" cx="100" cy="100" r="97"/>
+            <circle class="cbadge__band" cx="100" cy="100" r="81"/>
+            <g class="cbadge__ring"><text dy="3.3"><textPath href="#cb-ring" textLength="503" lengthAdjust="spacing">INFORMATION SECURITY MANAGEMENT · CERTIFIED ·</textPath></text></g>
+            <circle class="cbadge__disc" cx="100" cy="100" r="70"/>
+            <circle class="cbadge__gold" cx="100" cy="100" r="66"/>
+            <g class="cbadge__icon"><path d="M100 43l12 5v8c0 8-5 13-12 16-7-3-12-8-12-16v-8z"/><rect x="96" y="55.5" width="8" height="7" rx="1.2"/><path d="M97.6 55.5v-2.4a2.4 2.4 0 0 1 4.8 0v2.4"/></g>
+            <text class="cbadge__pre" x="100" y="86">ISO/IEC</text>
+            <text class="cbadge__code" x="100" y="121">27001</text>
+            <text class="cbadge__ed" x="100" y="141">:2022</text>
+          </svg>
+          <p class="cert__code">ISO/IEC 27001:2022</p>
+          <h3>Information security</h3>
+          <p class="cert__lead">A management system (ISMS) that protects the confidentiality, integrity and availability of the data we process.</p>
+          <button class="cert__more" type="button" aria-expanded="false" aria-controls="cert-27001">What it guarantees <i aria-hidden="true"></i></button>
+        </div>
+        <div class="cert__detail" id="cert-27001">
+          <p class="cert__k">ISO/IEC 27001:2022 · What it requires</p>
+          <ul><li>Information risk assessment and treatment</li><li>Controlled, logged access to data and systems</li><li>Incident management and business continuity</li><li>The 93 security controls set out in the standard</li></ul>
+          <p class="cert__k">For your department</p>
+          <p class="cert__why">Number plates, transits and penalty notices are personal data: they are processed under audited controls, supporting GDPR compliance.</p>
+          <button class="cert__close" type="button" aria-label="Close details for ISO/IEC 27001:2022">Close <i aria-hidden="true"></i></button>
+        </div>
+      </article>
+    </div>
+    <ul class="certsec__foot">
+      <li><b>Independent body</b><span>Certifications issued by a third-party body, not by the company itself.</span></li>
+      <li><b>Regular audits</b><span>Annual surveillance audits and full recertification every three years.</span></li>
+      <li><a class="certsec__ask" href="#contatti"><b>Copies of the certificates</b><span>Available on request for tenders and supplier registers <i aria-hidden="true">→</i></span></a></li>
+    </ul>
+  </div>
+</section>
+
+<!-- ============ CONTATTI ============ -->
+<section class="contact" id="contatti" data-nav="light">
+  <div class="wrap contact__grid">
+    <div class="contact__copy">
+      <p class="eyebrow">Need advice?</p>
+      <h2 class="contact__title split">Let’s talk.</h2>
+      <p>We offer advice and support to local authorities, to ensure an ongoing road safety service.</p>
+      <dl class="contact__list">
+        <div><dt>Address</dt><dd><a href="https://maps.google.com/?q=Via+del+Gonfalone+3,+20123+Milano" target="_blank" rel="noopener">Via del Gonfalone 3<br>20123 Milan, Italy</a></dd></div>
+        <div><dt>Phone</dt><dd><a href="tel:+390240042393">+39 02 4004 2393</a></dd></div>
+        <div><dt>Fax</dt><dd>+39 02 5656 2961</dd></div>
+        <div><dt>E-mail</dt><dd><a href="mailto:info@hypnosweb.it">info@hypnosweb.it</a></dd></div>
+        <div><dt>WhatsApp</dt><dd><a href="https://wa.me/390240042393" target="_blank" rel="noopener">Message us on WhatsApp</a></dd></div>
+      </dl>
+    </div>
+    <form class="form" id="contact-form" novalidate>
+      <div class="field"><input id="f-name" name="name" autocomplete="name" required placeholder=" "><label for="f-name">Full name</label></div>
+      <div class="field"><input id="f-ente" name="ente" autocomplete="organization" placeholder=" "><label for="f-ente">Organisation or department</label></div>
+      <div class="field-row">
+        <div class="field"><input id="f-email" type="email" name="email" autocomplete="email" required placeholder=" "><label for="f-email">E-mail</label></div>
+        <div class="field"><input id="f-phone" type="tel" name="phone" autocomplete="tel" placeholder=" "><label for="f-phone">Phone</label></div>
+      </div>
+      <fieldset class="chips"><legend>Interested in</legend>
+        <label><input type="checkbox" name="topic" value="Plate recognition"><span>Plate recognition</span></label>
+        <label><input type="checkbox" name="topic" value="Spot speed enforcement"><span>Spot speed enforcement</span></label>
+        <label><input type="checkbox" name="topic" value="Average speed enforcement"><span>Average speed enforcement</span></label>
+        <label><input type="checkbox" name="topic" value="ZTL"><span>ZTL</span></label>
+        <label><input type="checkbox" name="topic" value="Parking meters"><span>Parking meters</span></label>
+        <label><input type="checkbox" name="topic" value="Software"><span>Software</span></label>
+        <label><input type="checkbox" name="topic" value="Local tax management"><span>Local taxes</span></label>
+      </fieldset>
+      <div class="field"><textarea id="f-msg" name="message" rows="4" required placeholder=" "></textarea><label for="f-msg">Message</label></div>
+      <label class="privacy"><input type="checkbox" id="f-privacy" required><span>I have read the <a href="privacy/" target="_blank">privacy notice</a>.</span></label>
+      <button class="btn btn--dark btn--wide" type="submit"><span>Prepare the request</span><i aria-hidden="true">→</i></button>
+      <p class="form__note" id="form-note">The request will open in your email app, ready to send.</p>
+    </form>
+  </div>
+</section>
+</main>
+
+<footer class="footer" data-nav="dark">
+  <div class="wrap">
+    <div class="footer__top">
+      <a class="footer__logo" href="#top" aria-label="HYPNOS Srl">
+        <span class="footer__lockup"><svg class="footer__word" aria-hidden="true"><use href="#hword"/></svg><small>Integrated solutions for safer cities</small></span>
+      </a>
+      <nav class="footer__nav" aria-label="Footer links">
+        <a href="#soluzioni">Solutions</a><a href="#sosta">Parking</a><a href="#verbali">Fines</a><a href="#software">Software</a><a href="#azienda">Company</a><a href="#certificazioni">Certifications</a><a href="#contatti">Contact</a>
+      </nav>
+    </div>
+    <p class="footer__legal">HYPNOS Srl · Single-member company · Registered office: Via del Gonfalone 3, 20123 Milano (MI), Italy · Share capital €20,000.00 fully paid up · VAT no. IT10682130967 · REA MI-2550012 · PEC (certified email) <a href="mailto:info@pec.hypnosweb.it">info@pec.hypnosweb.it</a></p>
+    <div class="footer__bottom">
+      <span>© 2026 HYPNOS Srl · All rights reserved</span>
+      <span class="footer__links"><a href="privacy/">Privacy</a><a href="credits/">Image credits</a></span>
+    </div>
+  </div>
+</footer>
+
+<dialog class="mail-dialog" id="mail-dialog" aria-labelledby="mail-title">
+  <p class="eyebrow">Your request</p>
+  <h2 id="mail-title">Ready for HYPNOS.</h2>
+  <p>Check the summary: the message is only sent once you confirm it in your email app.</p>
+  <pre id="mail-summary">Fill in the form to see the summary here.</pre>
+  <div class="mail-dialog__actions"><button class="btn btn--ghost" id="mail-close" type="button">Edit</button><a class="btn btn--dark" id="mail-link" href="mailto:info@hypnosweb.it">Open email</a></div>
+</dialog>
+</body>
+</html>

@@ -9,6 +9,7 @@ Numeri, targhe e schermate mostrati nel sito sono illustrativi e fittizi; le fot
 - [Home](https://www.hypnosweb.it/): soluzioni, sosta a pagamento chiavi in mano, servizio integrato dei verbali, software, metodo, azienda, certificazioni, contatti
 - [Informativa privacy](https://www.hypnosweb.it/privacy/): trattamento dei dati di chi visita il sito e di chi contatta HYPNOS
 - [Crediti immagini](https://www.hypnosweb.it/crediti/): fonti e licenze di immagini, modelli 3D e caratteri
+- [English version](https://www.hypnosweb.it/en/): the same site in English, with [privacy notice](https://www.hypnosweb.it/en/privacy/) and [image credits](https://www.hypnosweb.it/en/credits/)
 
 ## Contatti
 

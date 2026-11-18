@@ -14,6 +14,9 @@ import { OutputPass } from 'three/addons/postprocessing/OutputPass.js';
 import { buildCity, CITY } from './city.js';
 import { loadDriver, seatDriver } from './driver.js';
 
+// site root, worked out from this file: the same scripts serve the Italian page (/) and the English one (/en/)
+const A = p => new URL('../' + p, import.meta.url).href;
+
 /* ------------------------------------------------------------------ */
 /*  World constants (metres). Aerial photo: 1536×1024 px @ 0.135 m/px  */
 /* ------------------------------------------------------------------ */
@@ -65,24 +68,24 @@ export async function createStory({ canvas, onProgress, quality = 'high', gate =
   const manager = new THREE.LoadingManager();
   manager.onProgress = (_u, l, t) => onProgress && onProgress(l / t);
   const texLoader = new THREE.TextureLoader(manager);
-  const draco = new DRACOLoader(manager).setDecoderPath('vendor/draco/').setDecoderConfig({ type: 'wasm' });
+  const draco = new DRACOLoader(manager).setDecoderPath(A('vendor/draco/')).setDecoderConfig({ type: 'wasm' });
   const gltfLoader = new GLTFLoader(manager).setDRACOLoader(draco);
   const hdrLoader = new HDRLoader(manager);
   const loadTex = (url, srgb = true) => new Promise((res, rej) => texLoader.load(url, t => { if (srgb) t.colorSpace = THREE.SRGBColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy(); res(t); }, undefined, rej));
 
   const [aerial, lod1, asph, env, carGltf, shadowTex, atlasImg, atlasN, driverTpl, medianTex, paveD, paveN] = await Promise.all([
-    loadTex('assets/img/aerial.webp'),
-    loadTex('assets/img/aerial-lod1.webp'),
-    loadTex('assets/tex/asphalt_diff.jpg'),
-    hdrLoader.loadAsync('assets/tex/rooftop_night_1k.hdr'),
-    gltfLoader.loadAsync('assets/3d/sedan.glb'),
-    loadTex('assets/3d/car-shadow.png'),
-    loadTex('assets/3d/sedan-atlas.jpg'),
-    loadTex('assets/3d/sedan-atlas-n.jpg', false),
+    loadTex(A('assets/img/aerial.webp')),
+    loadTex(A('assets/img/aerial-lod1.webp')),
+    loadTex(A('assets/tex/asphalt_diff.jpg')),
+    hdrLoader.loadAsync(A('assets/tex/rooftop_night_1k.hdr')),
+    gltfLoader.loadAsync(A('assets/3d/sedan.glb')),
+    loadTex(A('assets/3d/car-shadow.png')),
+    loadTex(A('assets/3d/sedan-atlas.jpg')),
+    loadTex(A('assets/3d/sedan-atlas-n.jpg'), false),
     loadDriver(gltfLoader),
-    loadTex('assets/tex/median-veg.webp'),
-    loadTex('assets/tex/pavement_diff.jpg'),
-    loadTex('assets/tex/pavement_nor.jpg', false),
+    loadTex(A('assets/tex/median-veg.webp')),
+    loadTex(A('assets/tex/pavement_diff.jpg')),
+    loadTex(A('assets/tex/pavement_nor.jpg'), false),
   ]);
   if (gate) await gate;
   draco.dispose();

@@ -17,6 +17,13 @@ Sito one-page in italiano per HYPNOS Srl (contenuti da https://www.hypnosweb.it)
 - **Contenuti**: tutti i testi riprendono solo quanto dichiarato su https://www.hypnosweb.it; numeri, targhe e schermate sono illustrativi e segnalati come tali.
 - **Menu**: i link portano direttamente alla sezione (velo di transizione, nessuno scorrimento lungo).
 
+## Lingue (italiano / inglese)
+
+- Il sito italiano resta nella radice (`/`, `/privacy/`, `/crediti/`); la versione inglese è in `dist/en/` (`/en/`, `/en/privacy/`, `/en/credits/`). Nel menu c'è il selettore **IT / EN** (anche su privacy, crediti e 404); ogni pagina dichiara l'altra lingua con `hreflang`, e la sitemap le elenca tutte.
+- **Le pagine inglesi non si modificano a mano**: si generano da quelle italiane con `python3 i18n/build-en.py`, che contiene tutte le traduzioni. Dopo ogni modifica ai testi italiani rilanciare lo script: se un testo italiano è cambiato, lo script si ferma e indica quale, così si aggiorna prima la traduzione.
+- I testi creati dai JS (toast della sosta, stati del fascicolo, riepilogo e-mail del modulo, cruscotto) scelgono la lingua da `<html lang>`. I percorsi di immagini e modelli 3D nei JS sono calcolati dalla posizione dello script, quindi funzionano da `/` e da `/en/`.
+- Il cartello "Area videosorvegliata" nella scena 3D resta in italiano (è un cartello stradale italiano). La privacy inglese indica che in caso di differenze prevale la versione italiana.
+
 ## Anteprima locale
 
 ```sh
