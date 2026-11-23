@@ -1,7 +1,7 @@
 // HYPNOS — page orchestration: intro, smooth scroll, story HUD, section motion.
-import { createStory } from './story.js?v=20261118a';
-import { initParking } from './parking.js?v=20261118a';
-import { initPipeline } from './pipeline.js?v=20261118a';
+import { createStory } from './story.js?v=20261124a';
+import { initParking } from './parking.js?v=20261124a';
+import { initPipeline } from './pipeline.js?v=20261124a';
 
 // page language: the English page (/en/) runs the same scripts
 const EN = document.documentElement.lang.startsWith('en');
@@ -87,41 +87,53 @@ function updateNav() {
 /* ================================================================ */
 /*  Intro: the wordmark writes itself in the nav                     */
 /* ================================================================ */
-const loader = $('#loader');
-// No loading screen: the hero photo is on the page from the first paint (the 3D scene fades in over it later).
-// The night veil lifts with a slight pull-back, the wordmark writes itself in the nav and the hero copy rises: under a second.
-gsap.set(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint', '.chapter--hero > *'], { opacity: 0 });
-gsap.set('.brand__word .rg', { opacity: 0 });
+// 24/11/2026 (intro del logo): all'apertura c'è una schermata con il logo HYPNOS animato (markup #intro in index.html,
+// animazioni in CSS che partono dal primo disegno, solo transform e opacity: restano fluide anche mentre il telefono
+// lavora). Dietro, intanto, la scena 3D si scarica, si costruisce e si "scalda" (vedi initStory). Quando è pronta il
+// logo vola nella barra del menu, la notte si apre sulla città e si scorre subito: la prima scrollata non trova più
+// lavoro pesante da fare.
+const intro = $('#intro');
+const introBar = $('#intro-bar');
+// il logo del menu è già scritto per intero: resta nascosto (css: .intro ~ .nav .brand) finché quello dell'intro non ci atterra
+$('#hy-reveal-r').setAttribute('width', '400');
 
 async function opening() {
   document.body.classList.remove('is-loading');
   lenis && lenis.start();
-  if (reduced) {
-    gsap.set(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.chapter--hero', '.chapter--hero > *', '.brand__word .rg'], { opacity: 1 });
-    gsap.set('#hy-reveal-r', { attr: { width: 400 } });
-    loader.remove();
+  gsap.set('.chapter--hero', { opacity: 1 });
+  if (reduced || !intro) {
+    intro && intro.remove();
     return;
   }
-  // veil, pull-back and hero copy run as Web Animations on the compositor: they stay smooth on phones even if
-  // the main thread stalls (fonts, layout, the 3D scene starting up)
-  const EXPO_OUT = 'cubic-bezier(.16,1,.3,1)', POWER3_OUT = 'cubic-bezier(.215,.61,.355,1)';
-  const anims = [
-    loader.animate([{ opacity: 1 }, { opacity: 0 }], { duration: 900, easing: 'cubic-bezier(.45,0,.55,1)', fill: 'forwards' }),
-    ...[$('#story-canvas'), fallbackImg].map(el => el.animate([{ scale: 1.07 }, { scale: 1 }], { duration: 1600, easing: EXPO_OUT })),
-    ...$$('.chapter--hero > *').map((el, i) => {
-      el.style.opacity = '';
-      return el.animate([{ opacity: 0, translate: '0 28px' }, { opacity: 1, translate: '0 0' }], { duration: 900, delay: 250 + i * 70, easing: POWER3_OUT, fill: 'backwards' });
-    }),
-  ];
-  anims[0].finished.then(() => loader.remove());
-  gsap.set('.chapter--hero', { opacity: 1 });
-  const tl = gsap.timeline();
-  tl.fromTo('#hy-reveal-r', { attr: { width: 0 } }, { attr: { width: 400 }, duration: .8, ease: 'power3.inOut' }, .1)
-    .fromTo('.brand__word .rg', { opacity: 0, rotation: -150, scale: .5, svgOrigin: '289.4 36.65' }, { opacity: 1, rotation: 0, scale: 1, svgOrigin: '289.4 36.65', duration: .9, ease: 'expo.out' }, .35)
-    .fromTo(['.nav__links', '.nav__lang', '.nav__cta', '.nav__burger', '.rail', '.scroll-hint'], { opacity: 0 }, { opacity: 1, duration: .7, stagger: .04 }, .45);
-  // the hero copy has landed (the pull-back's long tail keeps going on its own)
-  await Promise.all([tl, ...anims.slice(3).map(a => a.finished)]);
+  const EXPO_OUT = 'cubic-bezier(.16,1,.3,1)', POWER3_OUT = 'cubic-bezier(.215,.61,.355,1)', IN_OUT = 'cubic-bezier(.76,0,.24,1)';
+  // si scorre da subito: la scena è pronta e l'intro non blocca più i gesti
+  intro.style.pointerEvents = 'none';
+  heroIntroDone = true;
+  // l'anello smette di girare e si ferma dritto, con un ultimo giro morbido
+  const spin = $('.intro__spin', intro);
+  const m = new DOMMatrix(getComputedStyle(spin).transform);
+  const angle = ((Math.atan2(m.b, m.a) * 180 / Math.PI) + 360) % 360;
+  spin.getAnimations().forEach(a => a.cancel());
+  spin.animate([{ transform: `rotate(${angle}deg)` }, { transform: 'rotate(360deg)' }], { duration: 1000, easing: EXPO_OUT, fill: 'forwards' });
+  // FLIP: il logo grande vola esattamente sul logo della barra (stessa proporzione del viewBox)
+  const logo = $('#intro-logo');
+  const from = logo.getBoundingClientRect(), to = $('.brand__word').getBoundingClientRect();
+  const s = to.height / from.height;
+  const dx = to.left + (to.width - from.width * s) / 2 - from.left, dy = to.top - from.top;
+  const fly = logo.animate([{ transform: 'none' }, { transform: `translate(${dx}px, ${dy}px) scale(${s})` }], { duration: 1050, delay: 140, easing: IN_OUT, fill: 'forwards' });
+  // payoff, barra e alone escono; la notte si apre sulla città che si avvicina
+  $$('.intro__tag, .intro__bar, .intro__glow', intro).forEach(el => el.animate([{ opacity: getComputedStyle(el).opacity }, { opacity: 0 }], { duration: 320, easing: 'ease-out', fill: 'forwards' }));
+  $('.intro__bg', intro).animate([{ opacity: 1 }, { opacity: 0 }], { duration: 950, delay: 260, easing: 'cubic-bezier(.45,0,.55,1)', fill: 'forwards' });
+  [$('#story-canvas'), fallbackImg].forEach(el => el.animate([{ scale: 1.1 }, { scale: 1 }], { duration: 2200, delay: 200, easing: EXPO_OUT, fill: 'backwards' }));
+  $$('.chapter--hero > *').forEach((el, i) => el.animate([{ opacity: 0, translate: '0 34px' }, { opacity: 1, translate: '0 0' }], { duration: 1000, delay: 560 + i * 80, easing: POWER3_OUT, fill: 'backwards' }));
+  $$('.nav__links, .nav__lang, .nav__cta, .nav__burger, .rail, .scroll-hint').forEach((el, i) => el.animate([{ opacity: 0 }, { opacity: 1 }], { duration: 700, delay: 700 + i * 40, easing: 'ease-out', fill: 'backwards' }));
+  await fly.finished.catch(() => {});
+  // atterrato: il logo vero della barra prende il posto di quello dell'intro nello stesso fotogramma
+  intro.remove();
 }
+
+// download della scena sulla barra dell'intro (la costruzione e il riscaldamento occupano l'ultimo tratto)
+function barraIntro(k) { if (introBar) introBar.style.transform = `scaleX(${Math.max(.04, Math.min(1, k))})`; }
 
 /* ================================================================ */
 /*  Story                                                            */
@@ -318,15 +330,30 @@ async function initStory() {
   try {
     if (reduced) throw new Error('movimento ridotto');
     if (!window.WebGL2RenderingContext) throw new Error('WebGL2 non disponibile');
-    story = await createStory({ canvas, gate: introPlayed, quality:new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
+    // 24/11/2026: niente più gate: la scena si costruisce subito, mentre l'intro del logo è sullo schermo
+    story = await createStory({ canvas, gate: null, onProgress: k => barraIntro(k * .8), quality:new URLSearchParams(location.search).get('q') || ((isMobile() || (navigator.hardwareConcurrency || 8) <= 4) ? 'low' : 'high') });
+    barraIntro(.88);
     story.onFrame(onStoryFrame);
     window.__story = story;
     drawPlateCrop(story.plateCanvas);
+    // 24/11/2026 (prima scrollata fluida): sotto l'intro si disegna un fotogramma in ogni tratto della sequenza
+    // (città dall'alto, zoom sull'auto con la città 3D, discesa sulla telecamera, feed): così texture, shader, buffer e
+    // passaggi di post-produzione sono già sulla GPU quando il visitatore scorre, e i primi passi non scattano
+    if (intro && !reduced) {
+      const tappe = [.2, .34, .42, .5, .56, .62, .7, .8, .9, .98];
+      for (let i = 0; i < tappe.length; i++) {
+        story.jump(tappe[i]); story.renderOnce();
+        barraIntro(.88 + .12 * (i + 1) / tappe.length);
+        await wait(0);
+      }
+    }
     const { p } = storyProgress(); story.jump(p);
     story.renderOnce();
+    barraIntro(1);
     addEventListener('resize', () => story.resize());
-    // the first rendered frame matches the photo underneath: cross-fade into the live scene
-    requestAnimationFrame(() => storyEl.classList.add('is-live'));
+    // the first rendered frame matches the photo underneath: cross-fade into the live scene (prima che l'intro esca)
+    await new Promise(r => requestAnimationFrame(r));
+    storyEl.classList.add('is-live');
   } catch (err) {
     console.warn('Story fallback:', err);
     storyEl.classList.add('is-fallback');
@@ -539,24 +566,30 @@ function contactForm() {
 /*  Boot                                                             */
 /* ================================================================ */
 const wait = ms => new Promise(r => setTimeout(r, ms));
-// the 3D scene downloads during the intro but is only built once the intro has played (see createStory's gate)
-let introDone;
-const introPlayed = new Promise(r => { introDone = r; });
+// 24/11/2026 (intro del logo): la scena 3D parte subito, sotto l'intro. L'intro dura almeno INTRO_MIN (il tempo
+// dell'animazione del logo) e poi aspetta che la scena sia pronta, al massimo fino a INTRO_MAX dall'apertura della
+// pagina: con una rete molto lenta si esce comunque e la scena compare sopra la foto appena è pronta.
+const INTRO_MIN = 3000;
+const INTRO_MAX = 10000;
 (async function boot() {
   fitFallback();
   addEventListener('resize', fitFallback);
-  initStory();
-  // open as soon as the hero photo is decoded; the photo is framed like the scene's first shot, so the 3D cross-fades in later
+  // la scena 3D: download, costruzione e riscaldamento mentre gira l'intro
+  const scena = initStory();
   await Promise.race([fallbackImg.decode().catch(() => {}), wait(1200)]);
   await Promise.race([document.fonts ? document.fonts.ready : null, wait(350)]);
   tick();
+  // sezioni, pin e misure di ScrollTrigger si preparano sotto l'intro, non al primo scorrimento
   sectionMotion();
   contactForm();
   gsap.ticker.add(tick);
+  ScrollTrigger.refresh();
+  if (!reduced && intro) {
+    const resto = ms => Math.max(0, ms - performance.now());
+    await Promise.race([Promise.all([scena, wait(resto(INTRO_MIN))]), wait(resto(INTRO_MAX))]);
+  }
   await opening();
   heroIntroDone = true;
-  ScrollTrigger.refresh();
-  introDone();
   window.__go = p => { const y = storyEl.offsetTop + p * storySpan(); lenis ? lenis.scrollTo(y, { immediate: true }) : window.scrollTo(0, y); };
   // debug hook: ?p=0.5 jumps into the sequence
   const q = new URLSearchParams(location.search).get('p');

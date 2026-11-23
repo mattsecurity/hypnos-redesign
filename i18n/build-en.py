@@ -345,6 +345,8 @@ HOME = [
     ('<span>Ho letto l’<a href="privacy/" target="_blank">informativa privacy</a>.</span>', '<span>I have read the <a href="privacy/" target="_blank">privacy notice</a>.</span>'),
     ('<span>Prepara la richiesta</span>', '<span>Prepare the request</span>'),
     ('La richiesta si aprirà nel tuo programma di posta, pronta da inviare.', 'The request will open in your email app, ready to send.'),
+    # logo intro
+    ('<p class="intro__tag">Soluzioni integrate per città più sicure</p>', '<p class="intro__tag">Integrated solutions for safer cities</p>'),
     # footer
     ('<small>Soluzioni integrate per città più sicure</small>', '<small>Integrated solutions for safer cities</small>'),
     ('aria-label="Collegamenti a piè di pagina"', 'aria-label="Footer links"'),
